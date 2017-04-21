@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.TreeSet;
 
-import yolobot.Agent;
+import yolobot.YoloAgent;
 import yolobot.YoloState;
 import yolobot.Util.SimpleState;
 import core.game.Event;
@@ -221,7 +221,7 @@ public class YoloKnowledge {
 			if (!haveNonStochasticEnemy && iteration != 0)
 				break;
 		}
-		if (!Agent.UPLOAD_VERSION)
+		if (!YoloAgent.UPLOAD_VERSION)
 			System.out.println("Stochastische NPCs: " + stochasticNpcCount);
 
 	}
@@ -304,7 +304,7 @@ public class YoloKnowledge {
 
 
 		if (currentState.getGameTick() != lastState.getGameTick() + 1) {
-			if (!Agent.UPLOAD_VERSION)
+			if (!YoloAgent.UPLOAD_VERSION)
 				System.out.println("Falsche uebergabe von States!");
 			return;
 		}
@@ -372,16 +372,16 @@ public class YoloKnowledge {
 		boolean fullControl = false;
 
 		if (lastX == currentX && lastY == currentY) {
-			//Agent didnt move. Player has full control! (Imagine walls etc)
+			//YoloAgent didnt move. Player has full control! (Imagine walls etc)
 			fullControl = true;
 		} else {
-			//Agent should have been moved according to the action used
+			//YoloAgent should have been moved according to the action used
 
 			int simpleLookaheadX = lastX + (actionDone == ACTIONS.ACTION_RIGHT ? 1 : (actionDone == ACTIONS.ACTION_LEFT ? -1 : 0));
 			int simpleLookaheadY = lastY + (actionDone == ACTIONS.ACTION_DOWN ? 1 : (actionDone == ACTIONS.ACTION_UP ? -1 : 0));
 
 			if (simpleLookaheadX == currentX && simpleLookaheadY == currentY) {
-				//Agent didnt move. Player has full control! (Imagine walls etc)
+				//YoloAgent didnt move. Player has full control! (Imagine walls etc)
 				fullControl = true;
 			}
 		}
@@ -396,7 +396,7 @@ public class YoloKnowledge {
 			if (agentMoveControlCounter[index] < Byte.MAX_VALUE)
 				agentMoveControlCounter[index]++;
 		} else {
-			//Agent moves by itself (OR: gets teleported!)
+			//YoloAgent moves by itself (OR: gets teleported!)
 			if (agentMoveControlCounter[index] > Byte.MIN_VALUE)
 				agentMoveControlCounter[index]--;
 		}
@@ -847,7 +847,7 @@ public class YoloKnowledge {
 //					}
 //				}
 //			}
-//			if(!Agent.UPLOAD_VERSION)
+//			if(!YoloAgent.UPLOAD_VERSION)
 //				System.out.println("Ende von " + indexToItype(possibleEndCauseIndex));
 			if (activeObjectEffects[avatarIndex][possibleEndCauseIndex] == null)
 				activeObjectEffects[avatarIndex][possibleEndCauseIndex] = new PlayerEvent();
@@ -1026,7 +1026,7 @@ public class YoloKnowledge {
 		}
 
 
-		//	5.Ermittle unterschiede auf dem Kaestchen, wo der Agent nun steht
+		//	5.Ermittle unterschiede auf dem Kaestchen, wo der YoloAgent nun steht
 
 		int beforeMask = simpleBefore.getMask(agentNowX, agentNowY);
 		int nowMask = simpleNow.getMask(agentNowX, agentNowY);
@@ -1311,7 +1311,7 @@ public class YoloKnowledge {
 		int passiveIndex = itypeToIndex(passive_itype);
 		YoloEventController[][] choosenEvents = activeEvent ? activeObjectEffects : passiveObjectEffects;
 		if (choosenEvents[avatarIndex][passiveIndex] == null) {
-			if (!Agent.UPLOAD_VERSION)
+			if (!YoloAgent.UPLOAD_VERSION)
 				System.out.println("Player Event null:" + avatar_itype + " -> " + passive_itype);
 			choosenEvents[avatarIndex][passiveIndex] = new PlayerEvent();
 		}

@@ -1,6 +1,8 @@
 import core.ArcadeMachine;
-import org.junit.*;
+import jaybot.Agent;
+import org.junit.Ignore;
 import org.junit.Test;
+import yolobot.YoloAgent;
 
 import java.util.Random;
 
@@ -31,17 +33,23 @@ public class JaybotTest {
     private static final Object recordActionsFile = null;
 
     @Test
+    @Ignore("Activate to play the game by yourself")
     public void shouldPlayGame() {
         ArcadeMachine.playOneGame(game, level1, (String) recordActionsFile, seed);
     }
 
     @Test
+    public void shouldRunGame() {
+        ArcadeMachine.runOneGame(game, level1, true, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
+    }
+
+    @Test
     @Ignore("Only activate if you want to test all games at once! Takes a while.")
-    public void shouldPlayAllGames() {
-        for (int i=0; i<games.length; i++) {
+    public void shouldRunAllGames() {
+        for (int i = 0; i < games.length; i++) {
             game = gamesPath + games[i] + ".txt";
             level1 = gamesPath + games[i] + "_lvl" + levelIdx + ".txt";
-            ArcadeMachine.playOneGame(game, level1, (String) recordActionsFile, seed);
+            ArcadeMachine.runOneGame(game, level1, true, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
         }
     }
 
