@@ -340,6 +340,9 @@ public class KnowledgeBasedAStar {
 										
 									}
 								}
+								if (allITypeObservationFound[index] == null) {
+									allITypeObservationFound[index] = new LinkedList<>();
+								}
 								allITypeObservationFound[index].add(obs);
 								
 							}
