@@ -1,8 +1,9 @@
 import core.ArcadeMachine;
 import jaybot.Agent;
-import org.junit.*;
 import org.junit.Test;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 /**
@@ -10,7 +11,6 @@ import java.util.Random;
  */
 public class JenkinsTest {
     private static final String gamesPath = "examples/gridphysics/";
-    private static final String generateLevelPath = "examples/gridphysics/";
 
     private static final String[] games = new String[]{
             "aliens", "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
@@ -24,15 +24,28 @@ public class JenkinsTest {
     };
 
     private static final int seed = (new Random()).nextInt();
-    private static final byte gameIdx = 28;
-    private static final byte levelIdx = 0;
-    private static String game = gamesPath + games[gameIdx] + ".txt";
-    private static String level1 = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
-    private static final String recordLevelFile = generateLevelPath + games[gameIdx] + "_glvl.txt";
-    private static final Object recordActionsFile = null;
 
     @Test
-    public void shouldRunGame() {
-        ArcadeMachine.runOneGame(game, level1, false, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
+    public void shouldRunGame() throws IOException {
+        String game;
+        String gameName;
+        String level;
+
+        try (PrintStream out = new PrintStream(new FileOutputStream("./jenkinsTestResult.txt"))) {
+            System.setOut(out);
+
+            for (int gameIdx = 0; gameIdx < games.length; gameIdx++) {
+                for (int levelIdx = 0; levelIdx < 5; levelIdx++) {
+                    gameName = games[gameIdx];
+                    game = gamesPath + gameName + ".txt";
+                    level = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
+
+                    out.write(("Testing Game: " + gameName + " - Level: " + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
+                    ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
+                }
+            }
+
+        }
+
     }
 }
