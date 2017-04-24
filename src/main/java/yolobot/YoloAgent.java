@@ -11,7 +11,7 @@ import java.util.Random;
  * This has to be implemented! It is currently only an random agent.
  */
 public class YoloAgent {
-    public static final boolean UPLOAD_VERSION = true;
+    public static final boolean UPLOAD_VERSION = false;
     private static final Random randomGenerator = new Random();
 
     public YoloAgent(YoloState startYoloState, ElapsedCpuTimer elapsedTimer) {
