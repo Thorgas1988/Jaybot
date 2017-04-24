@@ -40,7 +40,7 @@ public class JenkinsTest {
                     game = gamesPath + gameName + ".txt";
                     level = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
 
-                    out.write(("Testing Game: " + gameName + " - Level: " + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
+                    out.write(("Testing Game #" + gameIdx + ": " + gameName + " - Level #" + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
                     ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
                 }
             }
