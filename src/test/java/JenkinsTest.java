@@ -40,6 +40,15 @@ public class JenkinsTest {
                     game = gamesPath + gameName + ".txt";
                     level = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
 
+                    File gameFile = new File(game);
+                    if (!gameFile.exists()) {
+                        continue;
+                    }
+                    File levelFile = new File(level);
+                    if (!levelFile.exists()) {
+                        continue;
+                    }
+
                     out.write(("Testing Game #" + gameIdx + ": " + gameName + " - Level #" + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
                     ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
                 }
