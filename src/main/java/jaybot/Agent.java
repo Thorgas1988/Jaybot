@@ -14,25 +14,16 @@ import YOLOBOT.YoloState;
  */
 public class Agent extends AbstractPlayer {
     private YoloState currentYoloState = null;
-    //private YoloMCTSAgent yoloAgent = null;
-//    private YoloMCTSAgent yoloAgent = null;
-    private YoloAgent yoloAgent = null;
+    private YOLOBOT.Agent yoloAgent;
 
     public Agent(StateObservation so, ElapsedCpuTimer elapsedTimer) {
         YoloState startYoloState = new YoloState(so);
         YoloKnowledge.instance = new YoloKnowledge(startYoloState);
-        //yoloAgent = new YoloMCTSAgent(startYoloState, elapsedTimer);
-        //yoloAgent = new YoloMCTSAgent();
-        yoloAgent = new YoloAgent(startYoloState, elapsedTimer);
-        yoloAgent.runFirstSecond(startYoloState, elapsedTimer);
+        yoloAgent = new YOLOBOT.Agent(so, elapsedTimer);
     }
 
     @Override
     public Types.ACTIONS act(StateObservation so, ElapsedCpuTimer elapsedTimer) {
-        currentYoloState = new YoloState(so);
-        YoloKnowledge.instance.learnStochasticEffekts(currentYoloState);
-        YoloState.currentGameScore = currentYoloState.getGameScore();
-
-        return yoloAgent.act(currentYoloState, elapsedTimer);
+        return yoloAgent.act(so, elapsedTimer);
     }
 }
