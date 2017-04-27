@@ -1,8 +1,7 @@
 import core.ArcadeMachine;
-import jaybot.Agent;
+import YOLOBOT.Agent;
 import org.junit.Ignore;
 import org.junit.Test;
-import yolobot.YoloAgent;
 
 import java.util.Random;
 
@@ -25,7 +24,7 @@ public class JaybotTest {
     };
 
     private static final int seed = (new Random()).nextInt();
-    private static final byte gameIdx = 0;
+    private static final byte gameIdx = 11;//18//28//29//31
     private static final byte levelIdx = 0;
     private static String game = gamesPath + games[gameIdx] + ".txt";
     private static String level1 = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
@@ -39,6 +38,7 @@ public class JaybotTest {
     }
 
     @Test
+    //@Ignore
     public void shouldRunGame() {
         ArcadeMachine.runOneGame(game, level1, true, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
     }
