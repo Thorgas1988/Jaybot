@@ -34,27 +34,25 @@ public class JenkinsTest {
         try (PrintStream out = new PrintStream(new FileOutputStream("./jenkinsTestResult.txt"))) {
             System.setOut(out);
 
-            int gameIdx = 1;
-            int levelIdx = 1;
-//            for (int gameIdx = 0; gameIdx < games.length; gameIdx++) {
-//                for (int levelIdx = 0; levelIdx < 5; levelIdx++) {
+            for (int gameIdx = 0; gameIdx < games.length; gameIdx++) {
+                for (int levelIdx = 0; levelIdx < 5; levelIdx++) {
                     gameName = games[gameIdx];
                     game = gamesPath + gameName + ".txt";
                     level = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
 
                     File gameFile = new File(game);
                     if (!gameFile.exists()) {
-//                        continue;
+                        continue;
                     }
                     File levelFile = new File(level);
                     if (!levelFile.exists()) {
-//                        continue;
+                        continue;
                     }
 
                     out.write(("Testing Game #" + gameIdx + ": " + gameName + " - Level #" + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
                     ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
-//                }
-//            }
+                }
+            }
 
         }
 
