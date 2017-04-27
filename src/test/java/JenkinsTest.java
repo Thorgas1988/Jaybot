@@ -51,6 +51,7 @@ public class JenkinsTest {
 
                     out.write(("Testing Game #" + gameIdx + ": " + gameName + " - Level #" + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
                     ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
+                    out.write("\n".getBytes(StandardCharsets.UTF_8));
                 }
             }
 
