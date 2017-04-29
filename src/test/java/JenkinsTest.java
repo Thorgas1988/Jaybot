@@ -50,7 +50,12 @@ public class JenkinsTest {
                     }
 
                     out.write(("Testing Game #" + gameIdx + ": " + gameName + " - Level #" + levelIdx + "\n").getBytes(StandardCharsets.UTF_8));
-                    ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
+                    try {
+                        ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
+                    } catch (Throwable t) {
+                        out.write("Exception during test:\n".getBytes(StandardCharsets.UTF_8));
+                        t.printStackTrace();
+                    }
                     out.write("\n".getBytes(StandardCharsets.UTF_8));
                 }
             }
