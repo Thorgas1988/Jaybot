@@ -21,11 +21,11 @@ public class JenkinsTest {
     private static final byte[] endLevelBytes = (endLevel+"\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] endGameBytes = (endGame+"\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] exceptionBytes = (exception+"\n").getBytes(StandardCharsets.UTF_8);
-    private static final byte[] gameBytes = (game+"\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] newLineBytes = "\n".getBytes(StandardCharsets.UTF_8);
 
     private static final String SCORE_PREFIX = "SCORE:";
     private static final String INFO_PREFIX = "INFO:";
+    private static final String SEED_PREFIX = "SEED:";
 
     private static final String plainFile = "./jenkinsTestResult.txt";
     private static final String csvFile = "./jenkinsTestResult.csv";
@@ -33,17 +33,17 @@ public class JenkinsTest {
     private static final String gamesPath = "examples/gridphysics/";
 
     private static final String[] games = new String[]{
-            "aliens", "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
+            "aliens" /*, "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
             "cakybaky", "camelRace", "catapults", "chase", "chipschallenge", "chopper", "cookmepasta", "crossfire",
             "defem", "defender", "digdug", "eggomania", "enemycitadel", "escape", "factorymanager", "firecaster",
             "firestorms", "frogs", "gymkhana", "hungrybirds", "iceandfire", "infection", "intersection", "jaws",
             "labyrinth", "lasers", "lasers2", "lemmings", "missilecommand", "modality", "overload", "pacman",
             "painter", "plants", "plaqueattack", "portals", "raceBet2", "realportals", "realsokoban", "roguelike",
             "seaquest", "sheriff", "sokoban", "solarfox", "superman", "surround", "survivezombies", "tercio",
-            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle"
+            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle" */
     };
 
-    private static final int seed = (new Random()).nextInt();
+    private static int seed;
 
     @Test
     //@Ignore("Currently a hell lot of data is written into the System.out. But as the results are written into the System.out as well we have a problem...")
@@ -88,8 +88,10 @@ public class JenkinsTest {
             return false;
         }
 
-        out.write(gameBytes);
         out.write((INFO_PREFIX + "Game-Nr=" + gameIdx + "#Game-Name=" + gameName + "#Level-Nr=" + levelIdx + "#Iteration=" + iterationIdx + "\n").getBytes(StandardCharsets.UTF_8));
+        seed = (new Random()).nextInt();
+        out.write((SEED_PREFIX + seed + "\n").getBytes(StandardCharsets.UTF_8));
+
         try {
             double[] result = ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
 
@@ -113,14 +115,16 @@ public class JenkinsTest {
     private void createCSV() {
         String line;
         Double score = null;
+        String seed = null;
         List<String> gameInfo = null;
+        List<String> seeds = new LinkedList<>();
         List<Double> scores = new LinkedList<>();
 
         
         try (BufferedReader br = new BufferedReader(new FileReader(new File(plainFile)))){
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(csvFile)))) {
 
-                bw.write("GameId;Game;Level;Score1;Score2;Score3;MeanScore;Result1;Result2;Result3;WinPercentage\n");
+                bw.write("GameId;Game;Level;Seed1;Seed2;Seed3;Score1;Score2;Score3;MeanScore;Result1;Result2;Result3;WinPercentage\n");
 
                 while ((line = br.readLine()) != null) {
 
@@ -128,22 +132,26 @@ public class JenkinsTest {
                         if (score != null) {
                             scores.add(score);
                         }
+                        if (seed != null) {
+                            seeds.add(seed);
+                        }
                     } else if (line.equals(endLevel)) {
-                        String csvLine = createCsvLine(gameInfo, scores);
+                        String csvLine = createCsvLine(gameInfo, seeds, scores);
                         bw.write(csvLine.toString());
                         bw.flush();
+                        scores = new LinkedList<>();
+                        seeds = new LinkedList<>();
                     } else if (line.equals(endGame)) {
                         // nothing to do
                     } else if (line.startsWith(SCORE_PREFIX)) {
                         score = parseScoreLine(line);
+                    } else if (line.startsWith(SEED_PREFIX)) {
+                        seed = parseSeedLine(line);
                     } else if (line.startsWith(INFO_PREFIX)) {
                         List<String> tmpGameInfo = parseInfoLine(line);
 
                         if (gameInfo == null) {
                             gameInfo = tmpGameInfo;
-                        } else if (!gameInfo.equals(tmpGameInfo)){
-                            gameInfo = tmpGameInfo;
-                            scores = new LinkedList<>();
                         }
                     }
                 }
@@ -165,11 +173,15 @@ public class JenkinsTest {
         return result;
     }
 
-    private String createCsvLine(List<String> gameInfo, List<Double> scores) {
+    private String createCsvLine(List<String> gameInfo, List<String> seeds, List<Double> scores) {
         StringBuilder sb = new StringBuilder();
 
         for (String info : gameInfo) {
             sb.append(info).append(";");
+        }
+
+        for (String seed : seeds) {
+            sb.append(seed).append(";");
         }
 
         double totalScore = 0;
@@ -202,5 +214,9 @@ public class JenkinsTest {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String parseSeedLine(String line) {
+        return line.substring(SEED_PREFIX.length());
     }
 }
