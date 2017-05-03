@@ -1,5 +1,5 @@
 import core.ArcadeMachine;
-import jaybot.Agent;
+import Jaybot.Agent;
 import org.junit.Test;
 
 import java.io.*;

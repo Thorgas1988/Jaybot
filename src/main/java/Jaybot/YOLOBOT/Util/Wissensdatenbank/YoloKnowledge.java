@@ -10,6 +10,7 @@ import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
 import tools.Vector2d;
 
+import java.awt.*;
 import java.util.*;
 
 public class YoloKnowledge {
@@ -717,11 +718,93 @@ public class YoloKnowledge {
 						}
 
 						//Learn possible Enemy-Positions:
+						double npcXPos = now.position.x/currentState.getBlockSize();
+						double npcYPos = now.position.y/currentState.getBlockSize();
+
+						System.out.println("now.position.x:"+now.position.x);
+						System.out.println("now.position.y:"+now.position.y);
+						System.out.println("npcXPos:"+npcXPos);
+						System.out.println("npcYPos:"+npcYPos);
+
 						int npcX = (int) (now.position.x/currentState.getBlockSize());
 						int npcY = (int) (now.position.y/currentState.getBlockSize());
-						if(positionAufSpielfeld(npcX, npcY))
+						if(positionAufSpielfeld(npcX, npcY)) {
 							blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX, npcY);
+						}
 
+						if ((npcXPos - npcX) < 0.5)
+						{
+							if ((npcYPos - npcY) < 0.5)
+							{
+								//Obenlinks
+								System.out.println("Block Obenlinks von Feind");
+								if(positionAufSpielfeld(npcX - 1, npcY - 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX - 1, npcY - 1);
+								}
+								if(positionAufSpielfeld(npcX - 1, npcY)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX - 1, npcY);
+								}
+								if(positionAufSpielfeld(npcX, npcY - 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX, npcY - 1);
+								}
+							}
+							else
+							{
+								System.out.println("Block Untenlinks von Feind");
+								//Untenlinks
+								if(positionAufSpielfeld(npcX - 1, npcY + 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX - 1, npcY + 1);
+								}
+								if(positionAufSpielfeld(npcX - 1, npcY)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX - 1, npcY);
+								}
+								if(positionAufSpielfeld(npcX, npcY + 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX, npcY + 1);
+								}
+							}
+						}
+						else
+						{
+							if ((npcYPos - npcY) < 0.5)
+							{
+								System.out.println("Block Obenrechts von Feind ");
+								//Obenrechts
+								if(positionAufSpielfeld(npcX + 1, npcY - 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX + 1, npcY - 1);
+								}
+								if(positionAufSpielfeld(npcX + 1, npcY)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX + 1, npcY);
+								}
+								if(positionAufSpielfeld(npcX, npcY - 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX, npcY - 1);
+								}
+							}
+							else
+							{
+								System.out.println("Block Untenrechts von Feind");
+								//Untenrechts
+								if(positionAufSpielfeld(npcX + 1, npcY + 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX + 1, npcY + 1);
+								}
+								if(positionAufSpielfeld(npcX + 1, npcY)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX + 1, npcY);
+								}
+								if(positionAufSpielfeld(npcX, npcY + 1)) {
+									blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX, npcY + 1);
+								}
+							}
+						}
+/*
+						//TODO:does not work
+						if (npcXPos != npcX ||
+								npcYPos != npcY	)
+						{
+							//enemy moves not grid based, so block also maps around
+							if(positionAufSpielfeld(npcX + 1, npcY + 1)) {
+								blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX + 1, npcY + 1);
+								System.out.println("enemy moves not grid based, so block also maps around ");
+							}
+						}*/
 
 						//Learn moveTicks:
 						byte currentMoveRule = (byte) (Integer.numberOfTrailingZeros(npcMoveModuloTicks[itypeIndex])+1);
