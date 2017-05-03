@@ -141,6 +141,7 @@ public class JenkinsTest {
                         bw.flush();
                         scores = new LinkedList<>();
                         seeds = new LinkedList<>();
+                        gameInfo = null;
                     } else if (line.equals(endGame)) {
                         // nothing to do
                     } else if (line.startsWith(SCORE_PREFIX)) {
