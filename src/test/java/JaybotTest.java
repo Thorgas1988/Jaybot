@@ -1,5 +1,5 @@
+import Jaybot.YOLOBOT.Agent;
 import core.ArcadeMachine;
-import YOLOBOT.Agent;
 import org.junit.Ignore;
 import org.junit.Test;
 
