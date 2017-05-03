@@ -33,14 +33,14 @@ public class JenkinsTest {
     private static final String gamesPath = "examples/gridphysics/";
 
     private static final String[] games = new String[]{
-            "aliens" /*, "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
+            "aliens" , "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
             "cakybaky", "camelRace", "catapults", "chase", "chipschallenge", "chopper", "cookmepasta", "crossfire",
             "defem", "defender", "digdug", "eggomania", "enemycitadel", "escape", "factorymanager", "firecaster",
             "firestorms", "frogs", "gymkhana", "hungrybirds", "iceandfire", "infection", "intersection", "jaws",
             "labyrinth", "lasers", "lasers2", "lemmings", "missilecommand", "modality", "overload", "pacman",
             "painter", "plants", "plaqueattack", "portals", "raceBet2", "realportals", "realsokoban", "roguelike",
             "seaquest", "sheriff", "sokoban", "solarfox", "superman", "surround", "survivezombies", "tercio",
-            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle" */
+            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle"
     };
 
     private static int seed;
