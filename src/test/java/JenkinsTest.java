@@ -4,22 +4,24 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 /**
  * Created by Torsten on 24.04.17.
  */
 public class JenkinsTest {
-    private static final String endIterations = "=\n";
-    private static final String endGame = "==\n";
-    private static final String endLevel = "===\n";
-    private static final String exception = "=EXCEPTION\n";
-    private static final String game = "=GAME\n";
-    private static final byte[] endIterationsBytes = endIterations.getBytes(StandardCharsets.UTF_8);
-    private static final byte[] endLevelBytes = endLevel.getBytes(StandardCharsets.UTF_8);
-    private static final byte[] endGameBytes = endGame.getBytes(StandardCharsets.UTF_8);
-    private static final byte[] exceptionBytes = exception.getBytes(StandardCharsets.UTF_8);
-    private static final byte[] gameBytes = game.getBytes(StandardCharsets.UTF_8);
+    private static final String endIterations = "=";
+    private static final String endGame = "===";
+    private static final String endLevel = "==";
+    private static final String exception = "=EXCEPTION";
+    private static final String game = "=GAME";
+    private static final byte[] endIterationsBytes = (endIterations+"\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] endLevelBytes = (endLevel+"\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] endGameBytes = (endGame+"\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] exceptionBytes = (exception+"\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] gameBytes = (game+"\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] newLineBytes = "\n".getBytes(StandardCharsets.UTF_8);
 
     private static final String SCORE_PREFIX = "SCORE:";
@@ -31,14 +33,14 @@ public class JenkinsTest {
     private static final String gamesPath = "examples/gridphysics/";
 
     private static final String[] games = new String[]{
-            "aliens", "bait" /*, "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
+            "aliens", "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
             "cakybaky", "camelRace", "catapults", "chase", "chipschallenge", "chopper", "cookmepasta", "crossfire",
             "defem", "defender", "digdug", "eggomania", "enemycitadel", "escape", "factorymanager", "firecaster",
             "firestorms", "frogs", "gymkhana", "hungrybirds", "iceandfire", "infection", "intersection", "jaws",
             "labyrinth", "lasers", "lasers2", "lemmings", "missilecommand", "modality", "overload", "pacman",
             "painter", "plants", "plaqueattack", "portals", "raceBet2", "realportals", "realsokoban", "roguelike",
             "seaquest", "sheriff", "sokoban", "solarfox", "superman", "surround", "survivezombies", "tercio",
-            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle" */
+            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle"
     };
 
     private static final int seed = (new Random()).nextInt();
@@ -60,14 +62,16 @@ public class JenkinsTest {
                         if (!runTestGame(gameIdx, levelIdx, iteration, out)) {
                             continue;
                         }
-                        out.write(endLevelBytes);
+                        out.write(endIterationsBytes);
                     }
-                    out.write(endGameBytes);
+                    out.write(endLevelBytes);
                 }
-                out.write(endIterationsBytes);
+                out.write(endGameBytes);
             }
 
         }
+
+        createCSV();
     }
 
     private boolean runTestGame (int gameIdx, int levelIdx, int iterationIdx, PrintStream out) throws IOException {
@@ -89,11 +93,15 @@ public class JenkinsTest {
         try {
             double[] result = ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
 
-            for (int player = 0; player < result.length; player++) {
-                String strResult = SCORE_PREFIX + "Player" + player + "=" + Double.toString(result[player]);
+            String strResult;
+            if (result != null && result.length>0) {
+                strResult = SCORE_PREFIX + Double.toString(result[0]);
                 out.write(strResult.getBytes(StandardCharsets.UTF_8));
-                out.write(newLineBytes);
+            } else {
+                strResult = SCORE_PREFIX + "0";
+                out.write(strResult.getBytes(StandardCharsets.UTF_8));
             }
+            out.write(newLineBytes);
         } catch (Throwable t) {
             out.write(exceptionBytes);
             t.printStackTrace(out);
@@ -103,30 +111,96 @@ public class JenkinsTest {
     }
 
     private void createCSV() {
-        StringBuilder csvLine = new StringBuilder();
-        int scoreNumber;
-        double totalScore;
         String line;
+        Double score = null;
+        List<String> gameInfo = null;
+        List<Double> scores = new LinkedList<>();
+
         
         try (BufferedReader br = new BufferedReader(new FileReader(new File(plainFile)))){
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(csvFile)))) {
-                line = br.readLine();
 
-                if (line.equals(endIterations)) {
+                bw.write("GameId;Game;Level;Score1;Score2;Score3;MeanScore;Result1;Result2;Result3;WinPercentage\n");
 
-                } else if (line.equals(endLevel)) {
+                while ((line = br.readLine()) != null) {
 
-                } else if(line.equals(endGame)) {
+                    if (line.equals(endIterations)) {
+                        if (score != null) {
+                            scores.add(score);
+                        }
+                    } else if (line.equals(endLevel)) {
+                        String csvLine = createCsvLine(gameInfo, scores);
+                        bw.write(csvLine.toString());
+                        bw.flush();
+                    } else if (line.equals(endGame)) {
+                        // nothing to do
+                    } else if (line.startsWith(SCORE_PREFIX)) {
+                        score = parseScoreLine(line);
+                    } else if (line.startsWith(INFO_PREFIX)) {
+                        List<String> tmpGameInfo = parseInfoLine(line);
 
-                } else if (line.startsWith(SCORE_PREFIX)) {
-
-                } else if (line.startsWith(INFO_PREFIX)) {
-
+                        if (gameInfo == null) {
+                            gameInfo = tmpGameInfo;
+                        } else if (!gameInfo.equals(tmpGameInfo)){
+                            gameInfo = tmpGameInfo;
+                            scores = new LinkedList<>();
+                        }
+                    }
                 }
-
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private List<String> parseInfoLine(String line) {
+        List<String> result = new LinkedList<>();
+        String [] properties = line.split("#");
+
+        for (int i=0; i<properties.length-1; i++) {
+            String[] keyVal = properties[i].split("=");
+            result.add(keyVal[1]);
+        }
+
+        return result;
+    }
+
+    private String createCsvLine(List<String> gameInfo, List<Double> scores) {
+        StringBuilder sb = new StringBuilder();
+
+        for (String info : gameInfo) {
+            sb.append(info).append(";");
+        }
+
+        double totalScore = 0;
+        for (Double score : scores) {
+            sb.append(score).append(";");
+            totalScore += score;
+        }
+        sb.append(totalScore/scores.size()).append(";");
+
+        double totalWins = 0;
+        for (Double score : scores) {
+            if (score > 0) {
+                totalWins++;
+                sb.append("VICTORY");
+            } else {
+                sb.append("DEFEAT");
+            }
+            sb.append(";");
+        }
+        sb.append(100 * totalWins / scores.size());
+        sb.append("\n");
+
+        return sb.toString();
+    }
+
+    private Double parseScoreLine(String line) {
+        try {
+            double score = Double.parseDouble(line.substring(SCORE_PREFIX.length()));
+            return score;
+        } catch (Exception e) {
+            return null;
         }
     }
 }
