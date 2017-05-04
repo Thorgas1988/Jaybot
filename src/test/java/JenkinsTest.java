@@ -46,7 +46,6 @@ public class JenkinsTest {
     private static int seed;
 
     @Test
-    //@Ignore("Currently a hell lot of data is written into the System.out. But as the results are written into the System.out as well we have a problem...")
     public void shouldRunGame() throws IOException {
         // Disable System Out for this test
         System.setOut(new PrintStream(new OutputStream() {
