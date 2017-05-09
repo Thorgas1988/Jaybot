@@ -51,7 +51,7 @@ public class JenkinsTest {
         try (PrintStream out = new PrintStream(new FileOutputStream(plainFile))) {
 
             for (int gameIdx = 0; gameIdx < games.length; gameIdx++) {
-                for (int levelIdx = 0; levelIdx < 1; levelIdx++) {
+                for (int levelIdx = 0; levelIdx < 5; levelIdx++) {
                     for (int iteration = 0; iteration < 3; iteration++) {
                         if (!runTestGame(gameIdx, levelIdx, iteration, out)) {
                             continue;
