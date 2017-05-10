@@ -120,41 +120,6 @@ public class TargetChooser {
 		InterestingTarged bestTarged = null;
 		int bestX;
 		int bestY;
-		/*if(!lockTarget || lastTarget == null || timeSinceTargetIsInLock > 50 || (exploit && lastTarget.isWinCondition())){
-			timeSinceTargetIsInLock = 0;
-			lockTarget = false;
-			double softMaxSum = 0;
-			double maxSoftMaxValue = 0;
-			for (InterestingTarged target : possibleTargets) {
-				double softMaxValue = target.getSoftMaxValue(prioSum, prioAdd);
-				softMaxSum += softMaxValue;
-				if(softMaxValue > maxSoftMaxValue){
-					maxSoftMaxValue = softMaxValue;
-				}
-			}
-			double currentThreshold = 0;
-			double rnd = Math.random();
-			for (InterestingTarged target : possibleTargets) {
-				double currentSoftMaxValue = target.getSoftMaxValue(prioSum, prioAdd);
-				currentThreshold += (currentSoftMaxValue/softMaxSum);
-				if(rnd < currentThreshold){
-					bestTarged = target;
-					lockTarget = target.getPriorityValue()>0;
-					break;
-				}
-			}
-			
-			//bestTarged = possibleTargets.peek();
-	
-			if (bestTarged == null) {
-				aStarHeuristic.disable();
-				npcHeuristic.disable();
-				return;
-			}
-		}else{
-			bestTarged = lastTarget;
-		}*/
-		
 
 		if (possibleTargets.isEmpty()) {
 			aStarHeuristic.disable();
@@ -176,7 +141,6 @@ public class TargetChooser {
 		
 		
 		if(bestTarged.getPriorityValue() < -300) {
-			//System.out.println("Disable (" + bestTarged.getPriorityValue() +")");
 			aStarHeuristic.disable();
 			npcHeuristic.disable();
 			return;
@@ -270,10 +234,6 @@ public class TargetChooser {
 			return;
 		}
 
-//		System.out.println("\t\t Stehe daneben: " + tickCounter);
-//		System.out.println("\t\t Stehe nahe: " + (state.getGameTick()-timeSinceNearAtTargetAndNothingHappens));
-//		System.out.println("\t\t Komm nicht naeher seit: " + (state.getGameTick()-timeSinceDistancedidntdecrease));
-
 		double timeMultiplier = Math.max(1, target.getPriorityValue()/50);
 		int nearMaxTime = (int) (20*timeMultiplier);
 		int mediumMaxTime = (int) (20*timeMultiplier);
@@ -347,9 +307,6 @@ public class TargetChooser {
 					+ (state.getGameTick() + 100) + "Ticks");
 			lockTarget = false;
 		}
-
-		// System.out.println("time Since Near At Target And Nothing Happens: "
-		// + (state.getGameTick() - timeSinceNearAtTargetAndNothingHappens));
 		lastTarget = target;
 		oldScore = state.getGameScore();
 
@@ -475,12 +432,7 @@ public class TargetChooser {
 		} else if (killedOnColision && !useActionEffective) {
 			prioValue -= 100;
 		}
-		
-//		prioValue = prioValue/10;
-//		if(cooldownList[YoloKnowledge.instance.itypeToIndex(observation.itype)] > state.getGameTick()){
-//			prioValue -= 50000;
-//		}
-		
+
 		if(observation.obsID == softlockTarget){
 			prioValue += 25;
 		}
@@ -511,7 +463,7 @@ public class TargetChooser {
 					if(YoloKnowledge.instance.isStochasticEnemy(enemyIndex)){
 						PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent(state.getAvatar().itype, enemyItype, true);
 						YoloEvent event = enemyEvent.getEvent(state.getInventoryArray());
-						if(event.getKill() /*&& !YoloKnowledge.instance.canInteractWithUse(state.getAvatar().itype, enemyItype)*/){
+						if(event.getKill()){
 							isFastMovingDeadlyStochasticEnemy = true;
 						}
 					}
@@ -524,12 +476,6 @@ public class TargetChooser {
 			MCTHandler.winH.setIntrestedInWinning(true);
 			return false;
 		}
-		
-//		if(foundUnseenObjectTimeCount > 0){
-//			//Gibt noch unbekannte Objekte --> aufsuchen!
-//			MCTHandler.winH.setIntrestedInWinning(false);
-//			return true;
-//		}
 
 		int scoreViaWinCount = 0;
 		int winCount = 0;
