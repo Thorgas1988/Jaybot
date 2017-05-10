@@ -66,9 +66,7 @@ public class BreitenSucheAgent extends SubAgent {
 		};
         pq = new PriorityQueue<OwnHistory>(100,c);
         
-    	//LinkedList<OwnHistory> fifo = new LinkedList<OwnHistory>();
     	pq.add(new OwnHistory(yoloState));
-        //fifo.add(new OwnHistory(so));
         hashIgnorePropability = 1;
     }
     
@@ -86,13 +84,11 @@ public class BreitenSucheAgent extends SubAgent {
         
         
         outer: while (!pq.isEmpty()) {
-        	//System.out.println(avgTime);
         	//Ist zeit uebrig?
         	if(elapsedTimer.remainingTimeMillis() < 8*avgTime)
         		return;
         	
         	//Queue
-        	
         	h = pq.poll();
         	
         	for (ACTIONS action : h.state.getAvailableActions()) {
@@ -102,12 +98,10 @@ public class BreitenSucheAgent extends SubAgent {
         			
 
         		if (visited.contains(getHash(h2.state)) && Math.random()<hashIgnorePropability){
-        			//System.out.println("Jump");
         			continue;
         		}else
         			visited.add(getHash(h2.state));
 				if(!h2.state.isGameOver()){
-					//fifo.add(h2);
 					if(!h2.toPrune())
 						pq.add(h2);
 				}else if(h2.state.getGameWinner() == WINNER.PLAYER_WINS){
@@ -134,7 +128,6 @@ public class BreitenSucheAgent extends SubAgent {
 			}
 		}
 		retVal += "Res:" + state.getAvatarResources().hashCode();
-		//retVal += "Score:" + state.getGameScore();
 		return retVal;
 	}
 
@@ -147,13 +140,11 @@ public class BreitenSucheAgent extends SubAgent {
     	if(pq.isEmpty() && winSolution == null)
     		todo = ACTIONS.ACTION_NIL;
     	else{
-    		//System.out.println("Tick:" + tick + " Queuesize:" + pq.size() + "\tAvg: " + queueAvg + "\t IgnoreP: " + hashIgnorePropability);
     		if(winSolution!=null){
     			if(winSolution.actions.size()<=tick)
     				winSolution = null;
     			else{
     				todo = winSolution.actions.get(tick);
-    				//System.out.println("Hab lsg in tiefe " + winSolution.actions.size());
     				}
     		}else{
     			while(pq.peek().actions.size()<=tick)
@@ -173,7 +164,6 @@ public class BreitenSucheAgent extends SubAgent {
     	if(pq.isEmpty() && winSolution == null){
     		OwnHistory aktuell = new OwnHistory(yoloState, durchgefuehrteAktionen);
     		pq.add(new OwnHistory(aktuell, todo));
-    		//System.out.println("RESTART! + " + visited.size());
     		visited.clear();
     	}
     	
