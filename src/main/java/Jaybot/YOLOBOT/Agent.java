@@ -49,51 +49,23 @@ public class Agent extends AbstractPlayer {
 		BFS bfs = new BFS(startYoloState, elapsedTimer);
 		BreitenSucheAgent bsa = new BreitenSucheAgent(startYoloState,
 				elapsedTimer);
-		// PlannerAgent planner = new PlannerAgent(startYoloState,
-		// elapsedTimer);
 		subAgents = new LinkedList<>();
 		subAgents.add(bsa);
 
 		subAgents.add(new MCTHandler(startYoloState));
 		subAgents.add(bfs);
-//		subAgents.add(new TestSubAgent());
-
-//		new TestSubAgent().preRun(startYoloState, elapsedTimer);
-		// subAgents.add(planner);
-		// bsa.preRun(startYoloState, elapsedTimer);
-
-		// Planner deactiveated
-		// ElapsedCpuTimer bfsTimer = new ElapsedCpuTimer();
-		// bfsTimer.setMaxTimeMillis(elapsedTimer.remainingTimeMillis()-100);
-
-		// bfs.preRun(startYoloState, bfsTimer);
-		// if(YoloKnowledge.instance.getPushableITypes().size() == 1){
-		// ACTIONS solutionFound = planner.act(startYoloState, elapsedTimer);
-		// if(solutionFound != ACTIONS.ACTION_NIL){
-		// //Planner has solution:
-		// planner.actionsToDo.addFirst(solutionFound);
-		// }
-		// }
 
 		bfs.preRun(startYoloState, elapsedTimer);
 
 		if (!Agent.UPLOAD_VERSION)
 			System.out.println(YoloKnowledge.instance.toString());
-//		YoloKnowledge.instance.learnDeactivated = true;
 	}
 
 	@Override
 	public ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
 		curElapsedTimer = elapsedTimer;
-		// if (currentYoloState != null && VIEW_ADVANCES) {
-		// if (lastStateObs != null)
-		// VGDLViewer.paint(lastStateObs.model);
-		// lastStateObs = stateObs.copy();
-		// }
 		currentYoloState = new YoloState(stateObs);
 		YoloKnowledge.instance.learnStochasticEffekts(currentYoloState);
-
-//		System.out.println(YoloKnowledge.instance.toString());
 
 		if(currentYoloState.getGameTick() == 1){
 			//Ist erster Tick nach Spielstart:
@@ -102,7 +74,7 @@ public class Agent extends AbstractPlayer {
 				return currentYoloState.getAvatarLastAction();
 			}
 		}
-		//System.out.println(YoloKnowledge.instance.toString());
+
 		// TODO: Hier koennten allgemeine, agentunabhaengige Auswertungen
 		// geschehen, welche den aktuellen SubAgent auswaehlen
 		YoloState.currentGameScore = currentYoloState.getGameScore();
@@ -135,8 +107,6 @@ public class Agent extends AbstractPlayer {
 			System.out.println("Time remaining: "
 					+ elapsedTimer.remainingTimeMillis());
 			sum += YoloState.advanceCounter;
-			// int avg = (int) (sum / currentYoloState.getGameTick());
-			// System.out.println("Average Steps: " + avg);
 
 			String dynamics = "Dynamic Objects:";
 			for (int i = 0; i < 32; i++) {
