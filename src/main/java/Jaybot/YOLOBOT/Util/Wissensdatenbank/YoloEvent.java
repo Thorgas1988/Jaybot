@@ -74,10 +74,6 @@ public class YoloEvent extends Event {
 		if(boolEventsPropability[2] > MIN_VALUE && boolEvents[2])
 			retVal += "\n\t Move";
 		
-//		if(!hasMovedOnce)
-//			retVal += "\n\t Object will not move!";
-		
-		
 		return retVal;
 	}
 
