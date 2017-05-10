@@ -96,16 +96,8 @@ public class YoloState {
 		_stateObservation.advance(action);
 		double timeAfterAdvance = Agent.curElapsedTimer.remainingTimeMillis();
 		avgAdvanceStepTimeNeeded = ((avgAdvanceStepTimeNeeded * (advanceCounterPerRun-1)) + (timeBeforAdvance - timeAfterAdvance))/advanceCounterPerRun;
-		//System.out.println("Avarage time for Advance needed: " + avgAdvanceStepTimeNeeded);
 		_advancedActions.add(action);
 		clear();
-
-		// if(!isGameOver()){
-		// KnowledgeBasedAStar aStar = new KnowledgeBasedAStar(this);
-		// aStar.calculate(getAvatarX(), getAvatarY(), getAvatar().itype, new
-		// int[0], true);
-		// }
-
 	}
 
 	private void clear() {
@@ -560,42 +552,6 @@ public class YoloState {
 			result = result * prime + inventory.get(itemId);
 		}
 
-		// StringBuilder sb = new StringBuilder();
-		// sb.append(avatarOrientationX);
-		// sb.append(avatarOrientationY);
-		// sb.append(">");
-		// sb.append(avatarX);
-		// sb.append(",");
-		// sb.append(avatarY);
-		// sb.append(",");
-		// sb.append(avatarId);
-		// sb.append(">");
-		// for (int i = 0; i < getObservationGrid().length; i++) {
-		// for (int j = 0; j < getObservationGrid()[i].length; j++) {
-		// sb.append(i);
-		// sb.append(",");
-		// sb.append(j);
-		// sb.append("_");
-		// for (Observation obs : getObservationGrid()[i][j]) {
-		// if(obs.category != Types.TYPE_AVATAR && (obs.category !=
-		// Types.TYPE_NPC || ignoreNPCs)){
-		// sb.append(obs.obsID);
-		// sb.append(obs.itype);
-		// sb.append(";");
-		// }
-		// }
-		// }
-		// }
-		// sb.append(" ");
-		// //Res:
-		// HashMap<Integer, Integer> inventory = getAvatarResources();
-		// for (int item : inventory.keySet()) {
-		// sb.append(item);
-		// sb.append(":");
-		// sb.append(inventory.get(item));
-		// }
-		// retVal += "Score:" + state.getGameScore();
-
 		return result;
 	}
 
@@ -638,7 +594,6 @@ public class YoloState {
 			return _availableActionsStochastic;
 
 		// ansonsten muss berechnet werden
-
 		ArrayList<ACTIONS> validActions = new ArrayList<ACTIONS>(
 				getAvailableActions(true));
 

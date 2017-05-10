@@ -29,11 +29,6 @@ public class OwnHistory {
 		actions = new LinkedList<ACTIONS>(before.actions);
 		actions.add(newAction);
 		if(state != null){
-			/*if(state.getResourcesPositions() != null)
-				priority += state.getResourcesPositions().length*2;
-			if(state.getMovablePositions() != null)
-				priority += state.getMovablePositions().length;*/
-			
 
 			ArrayList<Observation>[][] grid = state.getObservationGrid();
 			//Hier soll geprueft werden ob auf dem Feld des Avatars etwas liegt
@@ -68,9 +63,7 @@ public class OwnHistory {
 				winBonus = (state.getGameWinner()==WINNER.PLAYER_WINS?1:-1);
 			}
 
-			//OneTypeAStar aStern = new OneTypeAStar(state);
-			//List<Observation> obs = aStern.calculate(new int[0]);
-			erreichbareFelder = 0;// aStern.getMoveableFieldCount();
+			erreichbareFelder = 0;
 			
 			tick = state.getGameTick();
 			
@@ -112,9 +105,7 @@ public class OwnHistory {
 		double win = winBonus;
 
 		double scoreWeight = 100;
-		//if(tick < 70)
-		//	scoreWeight = 0;
-		
+
 		double historyWeight = 0.1;
 		if(score*scoreWeight == 0)
 			historyWeight = 0;
@@ -124,9 +115,7 @@ public class OwnHistory {
 		if(tick<100)
 			return -win;
 			
-		//return -100* -state.getGameScore()-erreichbareFelder - 100*winBonus;//priority;
-		//priority = -erreichbareFelder;
-		return -priority;//(erreichbareFelder + (100*(priority + winBonus)) +state.getGameScore());
+		return -priority;
 
 	}
 
