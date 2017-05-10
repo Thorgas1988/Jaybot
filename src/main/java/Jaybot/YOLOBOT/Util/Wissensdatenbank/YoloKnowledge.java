@@ -345,8 +345,6 @@ public class YoloKnowledge {
 			if(newEvent.gameStep != lastGameTick){
 				break;
 			}
-//			if(DEBUG)
-//				System.out.println("Event!");
 			int passiveItype = newEvent.passiveTypeId;
 			byte passiveIndex = itypeToIndex(passiveItype);
 			int activeItype = newEvent.activeTypeId;
@@ -546,24 +544,7 @@ public class YoloKnowledge {
 				for (Observation nearObs : nearObservations) {
 					if(simpleNow.getObservationWithIdentifier(nearObs.obsID) == null)
 						nothingGone = false;
-//					else{
-//						for (ArrayList<Observation> obsLists : currentState.getObservationList(nearObs.category)) {
-//							if(obsLists != null && !obsLists.isEmpty() && obsLists.get(0).itype == nearObs.itype){
-//								boolean found = false;
-//								for (Observation obsToCheck: obsLists) {
-//									if(obsToCheck.obsID == nearObs.obsID)
-//										found = true;
-//								}
-//								if(!found)
-//									nothingGone = false;
-//							}
-//						}
-//					}
-//						nothingGone = false;
 				}
-
-				//NothingGone doesnt work cause of bugs in the forwardModel, so:
-//				nothingGone &= objectCategory[spawnerItypeIndex] == Types.TYPE_PORTAL;
 
 				if(nothingGone){
 					if(spawnerOf[spawnerItypeIndex] != index && spawnerInfoSure[spawnerItypeIndex]){
@@ -664,8 +645,7 @@ public class YoloKnowledge {
 					activeObjectEffects[avatarIndex][passiveIndex] = new PlayerEvent();
 
 				PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][passiveIndex];
-				//if(!(isStochasticEnemy[passiveIndex] && pEvent.getEvent(inventory).getKill()))
-					pEvent.update(inventory, false);
+				pEvent.update(inventory, false);
 			}
 		}
 	}
@@ -729,7 +709,6 @@ public class YoloKnowledge {
 						if(remainer > 0){
 							//Enemy moved in a gameTick where it wasnt expected to move!
 							npcMoveModuloTicks[itypeIndex] = (byte) (npcMoveModuloTicks[itypeIndex] >> (Integer.numberOfTrailingZeros(remainer)+1));
-//							System.out.println("Enemy " + now.itype + " moves all " + (Integer.numberOfTrailingZeros(npcMoveModuloTicks[itypeIndex])+1) + " ticks!");
 						}
 					}
 				}
@@ -792,25 +771,6 @@ public class YoloKnowledge {
 			x = lastState.getAvatarX();
 			y = lastState.getAvatarY();
 		}
-//		int blockSize = lastState.getBlockSize();
-//		ArrayList<Observation>[] gridFields = lastState.getNpcPositions(new Vector2d(x*blockSize, y*blockSize));
-//		Observation killOption = null;
-//		int maxDistance = blockSize*blockSize*3;
-//		int nearNpcs = 0;
-//		if(gridFields != null){
-//			for (ArrayList<Observation> gridField : gridFields) {
-//				for (Observation observation : gridField) {
-//					if(observation.sqDist <= maxDistance){
-//						nearNpcs++;
-//						killOption = observation;
-//					}
-//				}
-//			}
-//			if(nearNpcs > 1)
-//				return;
-//		}
-
-
 
 		SimpleState lastSimpleState = lastState.getSimpleState();
 		//Ermittle ob gelernt werden kann:
@@ -838,31 +798,13 @@ public class YoloKnowledge {
 
 			//TODO: frueherer ansatz: possibleKillingMask = possibleKillingMask & blockingMaskTheorie[avatarIndex];
 		}
-//		System.out.println("\t Mask = " +  Integer.toBinaryString(mask));
 		int possibleEndCauseIndex = Integer.numberOfTrailingZeros(possibleKillingMask);
 		if(possibleKillingMask != 0 && possibleEndCauseIndex != avatarIndex && Integer.numberOfLeadingZeros(possibleKillingMask) + possibleEndCauseIndex == 31){
 			//Es ist genau ein Bit in der possibleKillingMask gesetzt.
-//			System.out.println("Objekt: " + possibleKillerIndex + " mit Itype: " + indexToItype(possibleKillerIndex));
 			if(activeObjectEffects[avatarIndex][possibleEndCauseIndex] == null)
 				activeObjectEffects[avatarIndex][possibleEndCauseIndex] = new PlayerEvent();
 
 			boolean win = currentState.getGameWinner() == WINNER.PLAYER_WINS;
-
-//			int categoryMissing = getFirstCategoryWhereAnObjectIsMissingInNewState(currentState, lastState);
-//			if(categoryMissing != -1){
-//				//Es ist neben dem Avatar ein weiteres Objekt verschwunden!
-//				Observation killer = getFirstObservationMissingOfCategory(currentState, lastState, categoryMissing);
-//				if(killer != null && !getPlayerEvent(lastState.getAvatar().itype, killer.itype, false).getEvent(inventory).getKill()){
-//					//Player konnte das objekt nicht toeten
-//					if(Math.abs(killer.position.x/currentState.getBlockSize() - x) + Math.abs(killer.position.y/currentState.getBlockSize() - y) <= 1){
-//						//Objekt war in meiner Naehe. Es wird mich gekillt haben!
-//
-//						possibleEndCauseIndex = itypeToIndex(killer.itype);
-//					}
-//				}
-//			}
-//			if(!Agent.UPLOAD_VERSION)
-//				System.out.println("Ende von " + indexToItype(possibleEndCauseIndex));
 			if(activeObjectEffects[avatarIndex][possibleEndCauseIndex] == null)
 				activeObjectEffects[avatarIndex][possibleEndCauseIndex] = new PlayerEvent();
 			PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][possibleEndCauseIndex];
@@ -949,8 +891,6 @@ public class YoloKnowledge {
 
 		if(!Agent.UPLOAD_VERSION && DEBUG)
 			System.out.println("Learn AgentEvent: " + indexToItype(avatarIndex) + " -> " + indexToItype(passiveIndex));
-//		if(indexToItype(avatarIndex) == 1 && indexToItype(passiveIndex) == 2)
-//			System.out.println("Aha!");
 
 		if(activeObjectEffects[avatarIndex][passiveIndex] == null)
 			activeObjectEffects[avatarIndex][passiveIndex] = new PlayerEvent();
@@ -959,16 +899,6 @@ public class YoloKnowledge {
 
 		PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][passiveIndex];
 		PlayerEvent oEvent = (PlayerEvent) passiveObjectEffects[avatarIndex][passiveIndex];
-
-
-//		if(DEBUG){
-//			System.out.println("Erwartetes Event:");
-//			System.out.println("\tCancel:" + pEvent.willCancel(inventoryItems));
-//			System.out.println("\tSpecialEvent:" + pEvent.willTriggerSpecialEvent(inventoryItems));
-//			System.out.println(pEvent.toString());
-//		}
-
-
 
 		byte itypeAvatar, teleportToItypeAvatar = -1;
 		itypeAvatar = stateNow.getAvatar()!=null?(byte) stateNow.getAvatar().itype:-1;
@@ -986,9 +916,6 @@ public class YoloKnowledge {
 		simpleBefore.fullInit();
 		SimpleState simpleNow = stateNow.getSimpleState();
 		simpleNow.fullInit();
-
-
-		//boolean pushExpected = (pEvent.willTriggerSpecialEvent(inventoryItems) && pEvent.getSpecialEvent().doesMove()) || (!pEvent.willTriggerSpecialEvent(inventoryItems) && pEvent.getDefaultEvent().doesMove());
 
 		//	1. Hat sich der Spieler bewegt / Bewegen wollen?
 		boolean wasMoveAction = actionDone == ACTIONS.ACTION_DOWN || actionDone == ACTIONS.ACTION_LEFT || actionDone == ACTIONS.ACTION_RIGHT || actionDone == ACTIONS.ACTION_UP;
@@ -1055,8 +982,8 @@ public class YoloKnowledge {
 		}
 
 
-		Observation activeBefore = avatarBefore;//Original before Workaround: simpleBefore.getObservationWithIdentifier(avatarIdentifier);
-		Observation activeNow = avatarNow; //Original before Workaround: simpleNow.getObservationWithIdentifier(avatarIdentifier);
+		Observation activeBefore = avatarBefore;
+		Observation activeNow = avatarNow;
 		boolean killActive = (activeNow == null);
 			//Move, wenn sich die position veraendert hat
 		boolean moveActive, itypeActiveChanged;
@@ -1064,11 +991,9 @@ public class YoloKnowledge {
 		if(killActive || activeBefore == null){
 			moveActive = false;
 			itypeActiveChanged = false;
-//			itypeActive = (byte) -1;
 		}else{
 			moveActive = wasMoveAction?!activeNow.position.equals(activeBefore.position):false;
 			itypeActiveChanged = activeNow.itype != activeBefore.itype;
-//			itypeActive = (byte) (itypeActiveChanged?itypeToIndex(activeNow.itype):-1);
 		}
 		//IType speichern, wenn Aenderung vorliegt,
 		if(itypeActiveChanged){
@@ -1077,7 +1002,7 @@ public class YoloKnowledge {
 			//Keine Aenderung des Itypes. Uebernehme alten Wert:
 			itypeActive = (byte) pEvent.getEvent(inventoryItemsBefore).getIType();
 		}
-		//System.out.println("Itype: " + itypeActive);
+
 		if(Math.abs(stateNow.getAvatarX()-stateBefore.getAvatarX()) + Math.abs(stateNow.getAvatarY()-stateBefore.getAvatarY()) > 2){
 			//Teleport!
 
@@ -1204,7 +1129,6 @@ public class YoloKnowledge {
 
 		if(movePassive){
 			//Passive bewegt sich weil agent dagegen laeuft.
-			//learnPushPossible(stateBefore, stateNow, agentBeforeX, agentBeforeY, avatarIndex,passiveIndex, scoreDelta);
 		}
 
 		//Lerne blocking:
@@ -1276,8 +1200,6 @@ public class YoloKnowledge {
 		int mask = currentState.getSimpleState().getMask(x, y);
 
 		boolean surelyWillNotBlock = (blockingMaskTheorie[avatarIndex] & mask) == 0;
-//		if(surelyWillNotBlock)
-//			return false;
 
 		//Might Block, check PlayerEvents:
 		int playerIndex = itypeToIndex(currentState.getAvatar().itype);
@@ -1320,7 +1242,6 @@ public class YoloKnowledge {
 		int x = currentState.getAvatarX();
 		int y = currentState.getAvatarY();
 		int itype = (currentState.getAvatar() != null)?currentState.getAvatar().itype:-1;
-		//System.out.println("Was at " + x + "|" + y);
 		Vector2d orientation = currentState.getAvatarOrientation();
 		long oldHash = currentState.getHash(ignoreNPCs);
 		switch (action) {
@@ -1364,22 +1285,6 @@ public class YoloKnowledge {
 
 		//TODO: ueberlegen, ob weiter wissen verwendet werden kann um hash zu generieren
 		return null;
-		/*
-
-		//Might Block, check PlayerEvents:
-		int playerIndex = itypeToIndex(currentState.getAvatar().itype);
-		for (Observation obs : currentState.getObservationGrid()[x][y]) {
-			int index = itypeToIndex(obs.itype);
-			if(activeObjectEffects[playerIndex][index] != null){
-				PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[playerIndex][index];
-				if(pEvent.getObserveCount() > 20 && pEvent.willCancel(inventory))
-					return oldHash;
-			}
-		}
-
-		//Nothing found that will block for sure, so guess action will work!
-		//TODO: ueberpruefen ob hier nicht besser null returnt werden sollte
-		return null;//currentState.getModifiedHash(ignoreNPCs,x,y,orientation.x, orientation.y);*/
 	}
 
 	public PlayerEvent getPlayerEvent(int avatar_itype, int passive_itype, boolean activeEvent) {
@@ -1572,93 +1477,6 @@ public class YoloKnowledge {
 				}
 			}
 		}
-/*
-		//Diagonal OR (Gegner muss nach Oben Links gehen):
-		if(positionAufSpielfeld(xPos+1, yPos+1)){
-			ArrayList<Observation> observations = grid[xPos+1][yPos+1];
-			for (Observation observation : observations) {
-				int obsIndex = itypeToIndex(observation.itype);
-				boolean checkDoubleMove = checkDoubleMoveGlobal && maxMovePerNPC_PerAxis[obsIndex][AXIS_X]<blockSize && maxMovePerNPC_PerAxis[obsIndex][AXIS_Y]<blockSize;
-				if(isStochasticEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, state.getGameTick())) && (blockingMaskTheorie[obsIndex] & mask) == 0){
-					//Check, ob der gegner nach Obenlinks gehen kann:
-					if(		((int)((observation.position.y - maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos
-							|| (checkDoubleMove && (int)((observation.position.y - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos ))
-							&& ((int)((observation.position.x - maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) == xPos
-							|| (checkDoubleMove && (int)((observation.position.x - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) == xPos))){
-						//Kann sich auf xPos & yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
-							return observation;
-						}
-					}
-				}
-			}
-		}
-
-		//Diagonal OR (Gegner muss nach Oben Rechts gehen):
-		if(positionAufSpielfeld(xPos-1, yPos+1)){
-			ArrayList<Observation> observations = grid[xPos-1][yPos+1];
-			for (Observation observation : observations) {
-				int obsIndex = itypeToIndex(observation.itype);
-				boolean checkDoubleMove = checkDoubleMoveGlobal && maxMovePerNPC_PerAxis[obsIndex][AXIS_X]<blockSize && maxMovePerNPC_PerAxis[obsIndex][AXIS_Y]<blockSize;
-				if(isStochasticEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, state.getGameTick())) && (blockingMaskTheorie[obsIndex] & mask) == 0){
-					//Check, ob der gegner nach Obenrechts gehen kann:
-					if(		((int)((observation.position.y - maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos
-							|| (checkDoubleMove && (int)((observation.position.y - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos ))
-							&&
-							((int)((observation.position.x + maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) + 1 >= xPos
-							|| checkDoubleMove && (int)((observation.position.x + 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) + 1 >= xPos)){
-						//Kann sich auf xPos & yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
-							return observation;
-						}
-					}
-				}
-			}
-		}
-
-		//Diagonal OR (Gegner muss nach Unten Rechts gehen):
-		if(positionAufSpielfeld(xPos-1, yPos-1)){
-			ArrayList<Observation> observations = grid[xPos-1][yPos-1];
-			for (Observation observation : observations) {
-				int obsIndex = itypeToIndex(observation.itype);
-				boolean checkDoubleMove = checkDoubleMoveGlobal && maxMovePerNPC_PerAxis[obsIndex][AXIS_X]<blockSize && maxMovePerNPC_PerAxis[obsIndex][AXIS_Y]<blockSize;
-				if(isStochasticEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, state.getGameTick())) && (blockingMaskTheorie[obsIndex] & mask) == 0){
-					//Check, ob der gegner nach UntenRechts gehen kann:
-					if(		((int)((observation.position.y + maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) + 1 >= yPos
-							|| (checkDoubleMove && (int)((observation.position.y + 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) + 1 >= yPos ))
-							&&
-							((int)((observation.position.x + maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) + 1 >= xPos
-							|| checkDoubleMove && (int)((observation.position.x + 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) + 1 >= xPos)){
-						//Kann sich auf xPos & yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
-							return observation;
-						}
-					}
-				}
-			}
-		}
-
-		//Diagonal OR (Gegner muss nach Unten Links gehen):
-		if(positionAufSpielfeld(xPos+1, yPos-1)){
-			ArrayList<Observation> observations = grid[xPos+1][yPos-1];
-			for (Observation observation : observations) {
-				int obsIndex = itypeToIndex(observation.itype);
-				boolean checkDoubleMove = checkDoubleMoveGlobal && maxMovePerNPC_PerAxis[obsIndex][AXIS_X]<blockSize && maxMovePerNPC_PerAxis[obsIndex][AXIS_Y]<blockSize;
-				if(isStochasticEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, state.getGameTick())) && (blockingMaskTheorie[obsIndex] & mask) == 0){
-					//Check, ob der gegner nach Untenlinks gehen kann:
-					if(		((int)((observation.position.y + maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) + 1 >= yPos
-							|| (checkDoubleMove && (int)((observation.position.y + 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) + 1 >= yPos ))
-							&& ((int)((observation.position.x - maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) == xPos
-							|| (checkDoubleMove && (int)((observation.position.x - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) == xPos))){
-						//Kann sich auf xPos & yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
-							return observation;
-						}
-					}
-				}
-			}
-		}*/
-
 
 		return null;
 	}

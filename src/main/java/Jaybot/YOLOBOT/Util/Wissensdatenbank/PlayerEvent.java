@@ -52,10 +52,6 @@ public class PlayerEvent implements YoloEventController {
 		if(!isPropablyDefaultEvent){
 			//Gucken, ob das inventar sich zu letzten default nicht geaendert hat:
 			//TODO: man koennte auch gucken, ob das derzeitige Inventar ein Grenzwert des specialEventTriggers ist...
-			/*if(specialEventTrigger.lastInventoryWhereNotOccurred == inventoryItems){
-				//Mit diesem Inventar wurde letztens Default ausgeloest!!
-				isPropablyDefaultEvent = true;
-			}*/
 		}
 		specialEventTrigger.update(inventoryItems, !isPropablyDefaultEvent);
 		if(isPropablyDefaultEvent){

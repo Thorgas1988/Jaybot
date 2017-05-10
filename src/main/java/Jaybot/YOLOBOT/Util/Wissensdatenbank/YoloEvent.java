@@ -84,8 +84,6 @@ public class YoloEvent extends Event {
 	public int likelyValue(byte newItype, boolean push, byte scoreDelta,
 			boolean killed, byte spawnedItype, byte teleportTo, boolean win, byte addInventory, byte removeInventory) {
 		int likely = 0;
-		//updateByteEvents(newItype, scoreDelta, spawnedItype);
-		//updateBoolEvents(killed);
 		
 		if(addInventory == byteEvents[4] || byteEventsPropability[4] == MIN_VALUE)
 			likely+= 1<<0;
