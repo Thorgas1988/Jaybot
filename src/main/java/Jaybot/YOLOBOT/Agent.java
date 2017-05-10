@@ -22,12 +22,9 @@ public class Agent extends AbstractPlayer {
 	public final static boolean UPLOAD_VERSION = false;
 	public final static boolean DRAW_TARGET_ONLY = false;
 	public final static boolean FORCE_PAINT = false;
-	public final static boolean VIEW_ADVANCES = false;
-	public static final double PAINT_SCALE = 1;
 
 	private final List<SubAgent> subAgents;
 	private SubAgent currentSubAgent;
-	private long sum;
 	public static ElapsedCpuTimer curElapsedTimer;
 	
 	//CheckVariablen um ersten Schritt-Bug zu umgehen:
@@ -106,7 +103,6 @@ public class Agent extends AbstractPlayer {
 					+ YoloState.advanceCounter);
 			System.out.println("Time remaining: "
 					+ elapsedTimer.remainingTimeMillis());
-			sum += YoloState.advanceCounter;
 
 			String dynamics = "Dynamic Objects:";
 			for (int i = 0; i < 32; i++) {

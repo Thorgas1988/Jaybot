@@ -23,10 +23,8 @@ public class TestSubAgent extends SubAgent {
 
 		if(current.getAvatarY() != 9)
 			System.out.println("AHA!");
-		else
 
 		return ACTIONS.ACTION_NIL;
-		
 	}
 
 	@Override
