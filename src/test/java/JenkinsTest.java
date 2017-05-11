@@ -34,7 +34,7 @@ public class JenkinsTest {
 
     private static final String[] games = new String[]{
             "aliens", "blacksmoke", "boloadventures", "cookmepasta", "dungeon", "enemycitadel",
-            "jaws", "pacman", "raceBet", "raceBet2", "zelda", "zenpuzzle"
+            "jaws", "pacman", "racebet", "racebet2", "zelda", "zenpuzzle"
     };
 
     private static int seed;
