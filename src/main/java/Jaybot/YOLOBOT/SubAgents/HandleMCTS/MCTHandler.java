@@ -8,7 +8,7 @@ import Jaybot.YOLOBOT.SubAgents.HandleMCTS.RolloutPolicies.RandomNotDeadRolloutP
 import Jaybot.YOLOBOT.SubAgents.HandleMCTS.RolloutPolicies.RolloutPolicy;
 import Jaybot.YOLOBOT.SubAgents.SubAgent;
 import Jaybot.YOLOBOT.Util.Heuristics.*;
-import Jaybot.YOLOBOT.Util.TargedChooser.TargetChooser;
+import Jaybot.YOLOBOT.Util.TargetChooser.TargetChooser;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
 import ontology.Types.ACTIONS;

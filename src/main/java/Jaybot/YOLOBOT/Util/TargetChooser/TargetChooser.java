@@ -1,4 +1,4 @@
-package Jaybot.YOLOBOT.Util.TargedChooser;
+package Jaybot.YOLOBOT.Util.TargetChooser;
 
 import core.game.Observation;
 import Jaybot.YOLOBOT.Agent;
@@ -23,7 +23,7 @@ public class TargetChooser {
 	private DeadendHeuristic deadendHeuristic;
 	private int[] cooldownList;
 	private HashMap<Integer, Integer> singleObjectCooldownSet;
-	private InterestingTarged lastTarget;
+	private InterestingTarget lastTarget;
 	private int fastChangeCounter;
 	private int gameTickSinceLastTargetchanged;
 	
@@ -34,7 +34,7 @@ public class TargetChooser {
 	private int closestDistanceEver; 
 	private int tickCounter;
 	boolean exploit;
-	private LinkedList<InterestingTarged> possibleTargets;
+	private LinkedList<InterestingTarget> possibleTargets;
 	private int foundScoreLastTimeCount;
 	private int foundUnseenObjectTimeCount;
 	private int[] iTypeFoundCount;
@@ -91,7 +91,7 @@ public class TargetChooser {
 		
 		Observation[] nearestITypesFound = kBA.nearestITypeObservationFound;
 		iTypeFoundCount = kBA.iTypesFoundCount;
-		possibleTargets = new LinkedList<InterestingTarged>();
+		possibleTargets = new LinkedList<InterestingTarget>();
 		foundScoreLastTimeCount = 0;
 		foundUnseenObjectTimeCount = 0;
 		double prioSum = 0;
@@ -103,7 +103,7 @@ public class TargetChooser {
 				continue;
 			}
 
-			InterestingTarged target = new InterestingTarged(
+			InterestingTarget target = new InterestingTarget(
 					nearestITypesFound[i]);
 			calculatePriorityValue(target, iTypeFoundCount[i], state, kBA);
 			if(lockTarget && lastTarget != null && lastTarget.getObs().itype == nearestITypesFound[i].itype && target.getPriorityValue()+25 < lastTarget.getPriorityValue()){
@@ -117,7 +117,7 @@ public class TargetChooser {
 		}
 		double prioAdd = -minPrio;
 		prioSum += possibleTargets.size() * prioAdd;
-		InterestingTarged bestTarged = null;
+		InterestingTarget bestTarged = null;
 		int bestX;
 		int bestY;
 
@@ -185,7 +185,7 @@ public class TargetChooser {
 				distance);
 	}
 
-	private boolean queueEqualComparetor(PriorityQueue<InterestingTarged> oldQueue) {
+	private boolean queueEqualComparetor(PriorityQueue<InterestingTarget> oldQueue) {
 		if(oldQueue == null || oldQueue.size() != possibleTargets.size()){
 			return false;
 		}else{
@@ -204,7 +204,7 @@ public class TargetChooser {
 		
 	}
 
-	private void checkTarget(InterestingTarged target, YoloState state,
+	private void checkTarget(InterestingTarget target, YoloState state,
                              int distance) {
 		Observation observation = target.getObs();
 		if(lastTarget == null || lastTarget.getObs().obsID != observation.obsID){
@@ -312,7 +312,7 @@ public class TargetChooser {
 
 	}
 
-	private double calculatePriorityValue(InterestingTarged target,
+	private double calculatePriorityValue(InterestingTarget target,
                                           int iTypeFoundCount, YoloState state, KnowledgeBasedAStar kBA) {
 		Observation observation = target.getObs();
 		double prioValue = 0;
@@ -479,7 +479,7 @@ public class TargetChooser {
 
 		int scoreViaWinCount = 0;
 		int winCount = 0;
-		for (InterestingTarged winningTarget : possibleTargets) {
+		for (InterestingTarget winningTarget : possibleTargets) {
 			if(winningTarget == null || !winningTarget.isWinCondition())
 				continue;
 			winCount++;
