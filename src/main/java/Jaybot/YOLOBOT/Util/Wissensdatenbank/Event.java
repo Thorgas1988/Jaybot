@@ -4,18 +4,48 @@ import Jaybot.YOLOBOT.Agent;
 
 
 public abstract class Event {
-	
+
+	/**
+	 * Speichert Byte events.
+	 * <br>Eintraege gehoeren zu:<br>
+	 * <ul>
+	 * <li> 0 = itype </li>
+	 * <li> 1 = scoreDelta </li>
+	 * <li> 2 = spawnedItype </li>
+	 * <li> 3 = teleportTo </li>
+	 * <li> 4 = addInventory </li>
+	 * <li> 5 = removeInventory </li>
+	 * </ul>
+	 */
+
+	/**
+	 * Speichert Boolean events.
+	 * <br>Eintraege gehoeren zu:<br>
+	 * <ul>
+	 * <li> 0 = killed </li>
+	 * <li> 1 = winGame </li>
+	 * <li> 2 = move </li>
+	 * </ul>
+	 */
+
 	private final static boolean DEBUG = false;
-
-	public static final Byte MIN_VALUE = -120;
-	public static final Byte MAX_VALUE = 120;
-	
+	// Minimal and maximal number for byteEventsProbability and boolEventProbability
+	public static final Byte MIN_VALUE = -120, MAX_VALUE = 120;
+	// Arrays for storing events information
 	byte[] byteEvents;
-	byte[] byteEventsPropability;
-
 	boolean[] boolEvents;
+	// Arrays for storing events counter
+	byte[] byteEventsPropability;
 	byte[] boolEventsPropability;
-		
+
+
+// Constructor
+	/**
+	 * Allocate space for Events Array
+	 * Set probability of each event to MIN_VALUE
+ 	 * @param byteEventCount number of byte type Event
+	 * @param booleanEventsCount number of boolean type Event
+	 */
 	public Event(int byteEventCount, int booleanEventsCount) {
 		byteEvents = new byte[byteEventCount];
 		byteEventsPropability = new byte[byteEventCount];
@@ -30,7 +60,18 @@ public abstract class Event {
 			boolEventsPropability[i] = MIN_VALUE;
 		}
 	}
-	
+
+
+// Following are 3 setters(update) for events
+	/**
+	 * Iterate over all events:
+	 * 		IF new event != this event:
+	 * 			IF Prob(this) > MIN_Prob: Decrease Prob of this event
+	 * 			ELSE: replace this event with new event
+	 * 		ESLE:
+	 * 			Increse Prob of this event
+	 * @param byteValues parameters representing the new byte events
+	 */
 	void updateByteEvents(Byte... byteValues){
 		for (int i = 0; i < byteEvents.length; i++) {
 			if(byteValues[i] != byteEvents[i]){
@@ -51,9 +92,11 @@ public abstract class Event {
 			}
 		}
 	}
-	
 
-	
+	/**
+	 * Iterate over all events by calling the do_one_iteration function updateBoolEvent with a different factor of importance
+	 * @param boolValues parameters representing the new boolean events
+	 */
 	void updateBoolEvents(boolean... boolValues){
 		int learnStep;
 		for (int i = 0; i < boolEvents.length; i++) {
@@ -66,6 +109,12 @@ public abstract class Event {
 		}
 	}
 
+	/**
+	 * Learn one bool event: analog as one iteration of updateByteEvents.
+	 * @param learnStep      importance rate: how fast to increase prob of this event
+	 * @param i	             which event to be updated
+	 * @param toLearnValue   which value to be learned
+	 */
 	void updateBoolEvent(int learnStep, int i, boolean toLearnValue) {
 		if(toLearnValue != boolEvents[i]){
 			//Gegensaetzliches Event!
@@ -84,4 +133,5 @@ public abstract class Event {
 				boolEventsPropability[i]+= learnStep;
 		}
 	}
+
 }
