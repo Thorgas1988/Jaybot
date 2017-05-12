@@ -33,11 +33,11 @@ public class MCTHandler extends SubAgent {
 	public static YoloState rootState;
 	public static int ROLLOUT_DEPTH = DEFAULT_ROLLOUT_DEPTH;
 	public static double epsilon = 1e-6;
-	public static AStarDistantsHeuristic aSDH;
-	public static DistanceToNpcsHeuristic npcH;
+	public static AStarDistanceHeuristic aSDH;
+	public static DistanceToNPCsHeuristic npcH;
 	public static WinHeuristic winH;
 	public static SimulateDepthHeuristic simDH;
-	public static DeadendHeuristic deH;
+	public static DeadEndHeuristic deH;
 	public static ScoreHeuristic scoreHeuristic;
 	public static OneDimensionMoveToMedianHeuristic oneDimenstionMedianHeuristic;
 	public static ScoreLookaheadHeuristic scoreLookaheadHeuristic;
@@ -71,10 +71,10 @@ public class MCTHandler extends SubAgent {
 		scoreLookaheadPolicy = new HeuristicRolloutPolicy(true);
 		
 		winH = new WinHeuristic();
-		aSDH = new AStarDistantsHeuristic(null);
+		aSDH = new AStarDistanceHeuristic(null);
 		simDH = new SimulateDepthHeuristic();
-		npcH = new DistanceToNpcsHeuristic();
-		deH = new DeadendHeuristic();
+		npcH = new DistanceToNPCsHeuristic();
+		deH = new DeadEndHeuristic();
 
 		heuristics.Put(scoreHeuristic);
 		heuristics.SetWeight(HeuristicType.ScoreHeuristic, 50);
