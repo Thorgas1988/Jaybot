@@ -4,17 +4,26 @@ import Jaybot.YOLOBOT.Agent;
 
 public class PlayerEvent implements YoloEventController {
 
+	/**
+	 * Class description:
+	 * 		A controller for YoloEvent, i.e. a two-class classifier
+	 */
 
 	private static final boolean DEBUG = true;
 	private TriggerConditionWithInventory cancelTrigger;
 	private TriggerConditionWithInventory specialEventTrigger;
 	private YoloEvent specialEvent;
 	private YoloEvent defaultEvent;
-
+	// 3 counters for easy decision between blocking move(class 1) and other events(class 2)
 	private short observeCount;
 	private short cancelCount;
 	private short eventCount;
 
+
+	/**
+	 * Constructor:
+	 * 		Initialize all member variables. Int to 0, new class instance.
+	 */
 	public PlayerEvent() {
 		observeCount = 0;
 		cancelCount = 0;
@@ -25,6 +34,29 @@ public class PlayerEvent implements YoloEventController {
 		specialEventTrigger = new TriggerConditionWithInventory();
 	}
 
+	@Override
+	public String toString() {
+		String retVal =  "############################\nCurrent Knowledge: ";
+
+		retVal += "\n\t Special Event Triggering = " + (eventCount == observeCount - cancelCount);
+		retVal += "\n\n\t Default Event Description: \n" + defaultEvent.toString();
+		retVal += "\n\t Special Event Description: \n" + specialEvent.toString();
+		retVal += "###############################";
+
+		return retVal;
+	}
+
+
+// Following are 3 setters(update)
+
+	/**
+	 * Learn blocking move from observation w.r.t. inventory items and canceled
+	 * 		1) Increase observe counter
+	 * 		2) IF canceled, increase cancel counter
+	 * 		3) Learn blocking move for cancelTrigger
+	 * @param inventoryItems An array which stores the number of each inventory type
+	 * @param canceled If in this case w.r.t inventory items the move was canceled in observation
+	 */
 	public void learnCancelEvent(byte[] inventoryItems, boolean canceled){
 		observeCount++;
 		if(canceled)
@@ -35,6 +67,26 @@ public class PlayerEvent implements YoloEventController {
 		}
 	}
 
+	/**
+	 * Learn other events from observation w.r.t inventory items and event
+	 * 		1) Increase event counter
+	 * 		2) IF move==true && specialEvent and defaultEvent never move once:
+	 * 				update event counter, cancel counter
+	 * 				reset cancel trigger and learn the event for cancel trigger with false
+	 * 		3) Check if the "input" event is identical to defaultEvent, by calling the comparable function of YoloEvent
+	 * 				IF it is so: learn this input event for default event
+	 * 				ELSE: learn this input event for special event
+	 * @param inventoryItems An array which stores the number of each inventory type
+	 * @param newItype chage of the avatar type
+	 * @param move a nil action or a specific action
+	 * @param scoreDelta score change
+	 * @param killed terminal state
+	 * @param spawnedItype new game object
+	 * @param teleportTo new game object
+	 * @param winGame terminal state
+	 * @param addInventory change of the avatar inventory
+	 * @param removeInventory change of the avatar inventory
+	 */
 	public void learnEventHappened(byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory){
 		eventCount++;
 		if(move && !specialEvent.hasMovedOnce && !defaultEvent.hasMovedOnce){
@@ -72,59 +124,18 @@ public class PlayerEvent implements YoloEventController {
 		}
 	}
 
-	public boolean willCancel(byte[] inventoryItems){
-		if(observeCount == 0)
-			return false;
-		else{
-			if(cancelCount == observeCount)
-				return true;
-			else
-				return cancelTrigger.willTrigger(inventoryItems);
-		}
-	}
-
-	public boolean willTriggerSpecialEvent(byte[] inventoryItems){
-		if(eventCount == observeCount - cancelCount)
-			return true;
-		else
-			return specialEventTrigger.willTrigger(inventoryItems);
-	}
-
-	public YoloEvent getSpecialEvent(){
-		return specialEvent;
-	}
-
-	public YoloEvent getDefaultEvent() {
-		return defaultEvent;
-	}
-
-	@Override
-	public String toString() {
-		String retVal =  "############################\nCurrent Knowledge: ";
-
-		retVal += "\n\t Special Event Triggering = " + (eventCount == observeCount - cancelCount);
-		retVal += "\n\n\t Default Event Description: \n" + defaultEvent.toString();
-		retVal += "\n\t Special Event Description: \n" + specialEvent.toString();
-		retVal += "###############################";
-
-		return retVal;
-	}
-
-	public short getObserveCount() {
-		return observeCount;
-	}
-
-	public short getCancelCount() {
-		return cancelCount;
-	}
-
-	public YoloEvent getEvent(byte[] inventoryItems) {
-		if(specialEventTrigger.willTrigger(inventoryItems))
-			return specialEvent;
-		else
-			return defaultEvent;
-	}
-
+	/**
+	 * Learn kill event from observation w.r.t inventory items and killed state observation
+	 * 		1) Increase observe counter
+	 * 		2) Update cancel trigger with false(not canceled, but killed or other event)
+	 * 		3) Call the getEvent() function to get special or default event
+	 * 				IF current event predicts wrongly, that means getKill()!=kill
+	 * 					update the corresponding event by calling:
+	 * 						learnKill(kill);
+	 * 						learnNotWin();
+	 * @param inventory An array which stores the number of each inventory type
+	 * @param kill If in this case w.r.t. inventory items the avatar was killed in observation
+	 */
 	public void update(byte[] inventory, boolean kill) {
 		observeCount++;
 		cancelTrigger.update(inventory, false);
@@ -142,5 +153,68 @@ public class PlayerEvent implements YoloEventController {
 			}
 		}
 	}
-	
+
+
+// Following are 3 SPECIAL getters
+
+	/**
+	 * IF all observed moves were canceled: return True
+	 * ELSE: let cancelTrigger to decide if the move would be canceled or not
+	 * @param inventoryItems An array which stores the number of each inventory type
+	 * @return boolean if a this move is blocking
+	 */
+	public boolean willCancel(byte[] inventoryItems){
+		if(observeCount == 0)
+			return false;
+		else{
+			if(cancelCount == observeCount)
+				return true;
+			else
+				return cancelTrigger.willTrigger(inventoryItems);
+		}
+	}
+
+	/**
+	 * IF all events other than cancel events are special events (not killed or so), return true.
+	 * ELSE: let specialEventTrigger to decide if the move would trigger a special event
+	 * @param inventoryItems An array which stores the number of each inventory type
+	 * @return boolean if a special event will be triggered
+	 */
+	public boolean willTriggerSpecialEvent(byte[] inventoryItems){
+		if(eventCount == observeCount - cancelCount)
+			return true;
+		else
+			return specialEventTrigger.willTrigger(inventoryItems);
+	}
+
+	/**
+	 * IF specialEventTrigger will Trigger: return special event
+	 * ESLE: return default event
+	 * @param inventoryItems An array which stores the number of each inventory type
+	 * @return YoloEvent, either special or default event
+	 */
+	public YoloEvent getEvent(byte[] inventoryItems) {
+		if(specialEventTrigger.willTrigger(inventoryItems))
+			return specialEvent;
+		else
+			return defaultEvent;
+	}
+
+// Following are 4 RAW getters
+	public short getObserveCount() {
+		return observeCount;
+	}
+
+	public short getCancelCount() {
+		return cancelCount;
+	}
+
+	public YoloEvent getSpecialEvent(){
+		return specialEvent;
+	}
+
+	public YoloEvent getDefaultEvent() {
+		return defaultEvent;
+	}
+
 }

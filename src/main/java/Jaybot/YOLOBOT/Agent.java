@@ -192,14 +192,12 @@ public class Agent extends AbstractPlayer {
 		for (SubAgent subAgent : subAgents) {
 			if (subAgent.Status == SubAgentStatus.IDLE) {
 				double subAgentWeight = subAgent.EvaluateWeight(yoloState);
-
 				if (maxWeight < subAgentWeight) {
 					maxWeight = subAgentWeight;
 					newAgent = subAgent;
 				}
 			}
 		}
-
 		return newAgent;
 	}
 	

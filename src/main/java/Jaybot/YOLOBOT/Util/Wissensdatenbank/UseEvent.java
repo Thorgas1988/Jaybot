@@ -2,17 +2,19 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 
 public class UseEvent extends Event {
-	
+
+	/**
+	 * Class Description:
+	 * 		A concrete Event class, which stores only one byte event "score change" and a boolean event "wall"
+	 */
+
+
+// Constructor
 	public UseEvent() {
 		super(1,1);
 	}
 	
-	public void update(byte scoreDelta, boolean wall){
-		updateByteEvents(scoreDelta);
-		updateBoolEvents(wall);
-	}
-	
-	
+
 	@Override
 	public String toString() {
 		String retVal = "Event ist:";
@@ -21,6 +23,14 @@ public class UseEvent extends Event {
 		return retVal;
 	}
 
+
+// Setter(update)
+	public void update(byte scoreDelta, boolean wall){
+		updateByteEvents(scoreDelta);
+		updateBoolEvents(wall);
+	}
+
+// Getters
 	public int getScoreDelta(){
 		return byteEvents[0];
 	}

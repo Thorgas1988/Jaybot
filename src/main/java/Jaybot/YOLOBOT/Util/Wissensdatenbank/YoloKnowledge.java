@@ -1867,7 +1867,6 @@ public class YoloKnowledge {
 	public boolean haveEverGotScoreWithoutWinning() {
 		return haveEverGotScoreWithoutWinning;
 	}
-	
 	public boolean agentHasControlOfMovement(YoloState state){
 		if(state.getAvatar() == null)
 			return true;
