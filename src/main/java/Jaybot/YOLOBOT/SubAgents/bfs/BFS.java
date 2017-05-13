@@ -87,8 +87,6 @@ public class BFS extends SubAgent {
         block_size = so.getBlockSize();
         visited = new HashSet<Long>();
 
-    	//LinkedList<OwnHistory> fifo = new LinkedList<OwnHistory>();
-
         Comparator<OwnHistoryLight> c = new Comparator<OwnHistoryLight>() {
         	public int compare(OwnHistoryLight o1, OwnHistoryLight o2) {return (int) Math.signum(o1.getPriority() - o2.getPriority());}
 		};
@@ -98,7 +96,6 @@ public class BFS extends SubAgent {
         queue.add(startState);
         bestScore = startState;
         sawNPC = so.getNpcPositions() != null && so.getNpcPositions().length > 0;
-        //fifo.add(new OwnHistory(so));
     }
     @Override
     public void preRun(YoloState yoloState, ElapsedCpuTimer elapsedTimer) {
@@ -124,12 +121,9 @@ public class BFS extends SubAgent {
         while (!queue.isEmpty()) {
         	ElapsedCpuTimer elapsedTimerIteration = new ElapsedCpuTimer();
 
-        	//System.out.println(avgTime);
         	//Ist zeit uebrig?
         	if(!(remaining > 2*avgTimeTaken && remaining > remainingLimit))
         		break;
-
-        	//Queue
 
         	h = queue.poll();
         	expandedCount++;
@@ -145,14 +139,11 @@ public class BFS extends SubAgent {
 						continue;
 					else
 						forceExpand = true;
-//        		boolean guessWillCancel = YoloKnowledge.instance.moveWillCancel(h.state, action); // Was tippt Knowledge?
         		Long probabilHash = YoloKnowledge.instance.getPropablyHash(h.state, action, true);
         		boolean guessWillCancel = probabilHash != null && visited.contains(probabilHash);
         		if(guessWillCancel && !forceExpand){
         			cancelMoves++;
         			continue;
-        		}else{
-            		//expandSteps++;
         		}
         		h2 = new OwnHistoryLight(h, action);
 
@@ -163,17 +154,14 @@ public class BFS extends SubAgent {
         		long hash = h2.state.getHash(true);
 
         		if(!Agent.UPLOAD_VERSION && guessWillCancel && !visited.contains(hash)){
-        			//System.out.println("Is at" + h2.state.getAvatarX() + "|" + h2.state.getAvatarY());
         			System.out.println("\t\t\tKRITISCHER FEHLER DER WISSENSDATENBANK!");
         		}
 
         		if (!forceExpand && visited.contains(hash) && h.tick != 0 && h2.timeSinceAvatarChange != 1 /* && (YoloKnowledge.instance.playerItypeIsWellKnown(h2.state) && YoloKnowledge.instance.agentHasControlOfMovement(h2.state)) */){
-//        			System.out.println("Jump");
         			cancelMoves++;
         			continue;
         		}else{
             		expandSteps++;
-//        			System.out.println("\t NoJump");
         		}
         		visited.add(hash);
         		branchedCount++;
@@ -181,10 +169,7 @@ public class BFS extends SubAgent {
 				if(!h2.state.isGameOver()){
 	        		if((h2.score > bestScore.score || !YoloKnowledge.instance.agentHasControlOfMovement(bestScore.state)) && YoloKnowledge.instance.agentHasControlOfMovement(h2.state)){
 						bestScore = h2;
-//						System.out.println("bester Score"+ bestScore.score);
-//						System.out.println("bester tick"+ bestScore.tick);
 					}
-					//fifo.add(h2);
 					if(!h2.toPrune())
 						queue.add(h2);
 				}else if(h2.state.getGameWinner() == WINNER.PLAYER_WINS){
@@ -230,28 +215,22 @@ public class BFS extends SubAgent {
      * @return An action for the current state
      */
     public ACTIONS act(YoloState yoloState, ElapsedCpuTimer elapsedTimer) {
-//    	currentState_ForDrawing = yoloState;
 
     	if(!Agent.UPLOAD_VERSION)
     		System.out.println("\t\t\t\t\t\t SIZE: " + queue.size());
 
     	tick = yoloState.getGameTick();
 
-//    	if(tick > 500){
-//    		YoloKnowledge.instance.learnDeactivated = true;
-//    	}
 
     	//miri finde ende
     	if(maybeEndOfTick == 2000){
 	    	deepestState.advance(ACTIONS.ACTION_NIL);
 	    	if(deepestState.isGameOver()){
 	    		maybeEndOfTick = deepestState.getGameTick()-1;
-	    		//System.out.println("endTick1 :"+ maybeEndOfTick);
 	    	}else{
 	    		deepestState.advance(ACTIONS.ACTION_NIL);
 		    	if(deepestState.isGameOver()){
 		    		maybeEndOfTick = deepestState.getGameTick()-1;
-		    		//System.out.println("endTick2 :"+ maybeEndOfTick);
 		    	}
 	    	}
     	}
@@ -273,9 +252,6 @@ public class BFS extends SubAgent {
 
 
     	if(winSolution != null && tick+winSolution.tick == maybeEndOfTick  && targetSolution == null){//tick+winSolution.tick <= maybeEndOfTick && tick+winSolution.tick >= maybeEndOfTick-10
-//    		System.out.println("tick"+ tick);
-//    		System.out.println("winsoltick"+ winSolution.tick);
-//    		System.out.println("maybeendoftick"+maybeEndOfTick);
     		if(!Agent.UPLOAD_VERSION)
     			System.out.println("BFS execute winSolution because end to close at tick " +tick );
     		targetSolution = winSolution;
@@ -293,11 +269,7 @@ public class BFS extends SubAgent {
     		queue.clear();
     	}
 
-
     	lastDepthStep++;
-
-        //if(fastForward)
-        //	System.out.println("FAAASTAA");
 
     	//weitersuchen
     	if(targetSolution == null){
@@ -309,10 +281,6 @@ public class BFS extends SubAgent {
     		if(targetSolutionStep == 0){
 				if(!Agent.UPLOAD_VERSION){
         			System.out.println("Ausfuehrung gestartet mit " + targetSolution.actions.size() + " Schritten!");
-//        			YoloState testStart = yoloState.copy();
-//        			for (int i = 0; i < targetSolution.actions.size(); i++) {
-//        				testStart.advance(targetSolution.actions.get(i));
-//					}
 				}
 				if(targetSolution.actions.isEmpty()){
 					//New solution has no steps.
@@ -322,14 +290,12 @@ public class BFS extends SubAgent {
 
 				}else{
 					//Remove non-valid elements from queue:
-
 		    		queue.clear();
 		    		visited.clear();
 					Runtime.getRuntime().gc();
 				}
     		}
 
-    		//System.out.println("Loesung gefunden! Schritt " + winStep +":" + todo.toString());
     		targetSolutionStep++;
 
     		if(targetSolution.actions.isEmpty()){
@@ -352,22 +318,6 @@ public class BFS extends SubAgent {
     		}
 
     	}
-    	/*else{
-    		if(!foundSolutionInPrerun || winConditionIsStillValid(yoloState, elapsedTimer)){
-
-    		}else{
-    			//Win condition is not valid any more
-    			//	--->> No deterministic game!
-    			targetSolution = null;
-    			queue.clear();
-        		if(!FORCE_RUN){
-        			Status = SubAgentStatus.POSTPONED;
-        			if(!Agent.UPLOAD_VERSION)
-        				System.out.println("BFS will nich mehr!  Winstate wurde nicht erreicht!");
-        		}
-    		}
-
-    	}*/
 
 
     	long memoryUsed = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory());
@@ -415,7 +365,7 @@ public class BFS extends SubAgent {
 	}
 	private boolean mctsCouldSolve(YoloState state) {
     	//TODO ausprogrammieren
-		return false;//YoloKnowledge.instance.getPushableITypes().isEmpty();
+		return false;
 	}
     
 	private boolean winConditionIsStillValid(YoloState yoloState,
@@ -461,8 +411,7 @@ public class BFS extends SubAgent {
         	
         	//Do win simulation:
         	YoloState currentState = yoloState.copy();
-//        	currentState.setNewSeed((int)(Math.random()*10000));
-        	
+
         	for (int i = startAction; i < targetSolution.actions.size(); i++) {
 				ACTIONS todo = targetSolution.actions.get(i);
 				//Do action:
@@ -482,7 +431,6 @@ public class BFS extends SubAgent {
 				//Durchsimuliert, nicht gestorben aber auch nicht gewonnen:
         		if(!Agent.UPLOAD_VERSION)
         			System.out.println("Simulation nicht beendet!");
-				//return false;
 			}
 
 			successfullWins++;
@@ -524,7 +472,6 @@ public class BFS extends SubAgent {
     	
     	
     	grid = peek.getObservationGrid();
-//    	grid = currentState_ForDrawing.getObservationGrid();
         int half_block = (int) (block_size*0.5);
         for(int j = 0; j < grid[0].length; ++j)
         {
@@ -532,16 +479,6 @@ public class BFS extends SubAgent {
             {
             	String printStr = "";
            	
-           	
-//            	g.setColor(Color.magenta);
-//            	//Draw Current Walk-Knowledge:
-//            	if(aStar.interpretedAsWall[i][j])
-//            		printStr = "(" + aStar.distance[i][j] + ")";
-//            	else
-//            		printStr = "" + aStar.distance[i][j];
-//            		
-            	
-            	
             	//Draw Current Idea (Queue Front):
                 if(grid[i][j].size() > 0)
                 {
@@ -549,7 +486,7 @@ public class BFS extends SubAgent {
 
                         Observation firstObs = grid[i][j].get(k); //grid[i][j].size()-1
                         //Three interesting options:
-                        int print = firstObs.category; //firstObs.itype; //firstObs.obsID; firstObs.category; 
+                        int print = firstObs.category;
                         printStr += firstObs.category + " | " + firstObs.itype+"|";
 					}
                 }
@@ -558,14 +495,6 @@ public class BFS extends SubAgent {
             }
         }
     }
-/*
-	private void pruneHeuristical(int count) {
-		for (int i = 0; i < count; i++) {
-			queue.dequeue();
-		}
-	}*/
-
-
 
 
 	@Override
@@ -573,10 +502,8 @@ public class BFS extends SubAgent {
 
 		if(FORCE_RUN || targetSolution != null || winSolution != null)
 			return 10000;
-//		if(FORCE_RUN)
-//			return 10000;
-		
-		if(!sawNPC /*&& !YoloKnowledge.instance.getPushableITypes().isEmpty()*/)
+
+		if(!sawNPC)
 			return 11;
 		return -11;
 	}
