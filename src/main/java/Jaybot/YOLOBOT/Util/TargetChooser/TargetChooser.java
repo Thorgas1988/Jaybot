@@ -44,13 +44,15 @@ public class TargetChooser {
 
 
     public TargetChooser(AStarDistanceHeuristic aSDH, DistanceToNPCsHeuristic npcH, DeadEndHeuristic deH) {
+        // Initialize the heuristics
         aStarHeuristic = aSDH;
         npcHeuristic = npcH;
         deadEndHeuristic = deH;
+
         cooldownList = new int[YoloKnowledge.INDEX_MAX];
         lastTimeInTarget = new int[YoloKnowledge.INDEX_MAX];
         lastTarget = null;
-        singleObjectCooldownSet = new HashMap<Integer, Integer>();
+        singleObjectCooldownSet = new HashMap<>();
         tickCounter = 0;
         closestDistanceEver = Integer.MAX_VALUE;
         targetInAimCounter = -1;
