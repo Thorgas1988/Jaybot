@@ -194,14 +194,8 @@ public class YoloState {
 		_stateObservation.advance(action);
 		double timeAfterAdvance = Agent.curElapsedTimer.remainingTimeMillis();
 		avgAdvanceStepTimeNeeded = ((avgAdvanceStepTimeNeeded * (advanceCounterPerRun-1)) + (timeBeforAdvance - timeAfterAdvance))/advanceCounterPerRun;
-		//System.out.println("Avarage time for Advance needed: " + avgAdvanceStepTimeNeeded);
 		_advancedActions.add(action);
 		clear();
-		// if(!isGameOver()){
-		// KnowledgeBasedAStar aStar = new KnowledgeBasedAStar(this);
-		// aStar.calculate(getAvatarX(), getAvatarY(), getAvatar().itype, new
-		// int[0], true);
-		// }
 	}
 	/**
 	 * @return An exact copy of the YoloState observation which only contains actions history and the raw StateObservation
