@@ -10,6 +10,7 @@ import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
 import tools.Vector2d;
 
+import java.awt.*;
 import java.util.*;
 
 public class YoloKnowledge {
@@ -21,7 +22,7 @@ public class YoloKnowledge {
 	public static final int AXIS_Y = 1;
 	public static final int AXIS_VALUE_NOT_CHANGE_INDEX = 2;
 	public static final int  FULL_INT_MASK = 0b1111_1111__1111_1111__1111_1111__1111_1111;
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	public static final Vector2d ORIENTATION_NULL = new Vector2d(0, 0);
 	public static final Vector2d ORIENTATION_UP = new Vector2d(0, -1);
 	public static final Vector2d ORIENTATION_DOWN = new Vector2d(0, 1);
@@ -50,6 +51,7 @@ public class YoloKnowledge {
 	private byte[] portalExitToEntryItypeMap;
 	private byte[] objectCategory;
 	private boolean[] isStochasticEnemy;
+	private boolean[] isContinuousMovingEnemy;
 	private boolean[] isDynamic;
 	private int dynamicMask;
 	private int playerIndexMask;
@@ -63,9 +65,9 @@ public class YoloKnowledge {
 	private byte[][] maxMovePerNPC_PerAxis;
 	private byte[] npcMoveModuloTicks;
 	private boolean haveEverGotScoreWithoutWinning;
-	
+
 	private int fromAvatarMask;
-	
+
 	private YoloState initialState;
 
 	public boolean learnDeactivated;
@@ -180,8 +182,66 @@ public class YoloKnowledge {
 
 		maxMovePerNPC_PerAxis = new byte[INDEX_MAX][3];
 		isStochasticEnemy = new boolean[INDEX_MAX];
+		isContinuousMovingEnemy = new boolean[INDEX_MAX];
+
 
 		learnStochasticEffekts(initialState);
+		learnContinuousMovingEnemies(initialState);
+	}
+
+	double sqrt2 = Math.sqrt(2.0);
+	public void learnContinuousMovingEnemies(YoloState state)
+	{
+		ArrayList<Observation>[] npcPositions = state.getNpcPositions();
+
+		if(npcPositions != null && npcPositions.length > 0)
+		{
+			for (int npcNr = 0; npcNr < npcPositions.length; npcNr++)
+			{
+				if (npcPositions[npcNr] != null && npcPositions[npcNr].size() > 0)
+				{
+					Observation firstOfType = npcPositions[npcNr].get(0);
+					int itypeIndex = itypeToIndex(firstOfType.itype);
+
+					if (!isContinuousMovingEnemy(itypeIndex))
+					{
+						Vector2d currentPos = firstOfType.position;
+						Vector2d positions[] = {currentPos, null, null};
+
+						YoloState simulatedState = state.copyAdvanceLearn(ACTIONS.ACTION_NIL);
+						for (int i = 1; i < 3; i++)
+						{
+
+							ArrayList<Observation>[] nowNpcs = simulatedState.getNpcPositions();
+							if(nowNpcs != null)
+							{
+								for (int npcNr2 = 0; npcNr2 < nowNpcs.length; npcNr2++)
+								{
+									Observation firstOfType2 = nowNpcs[npcNr2].get(0);
+									int itypeIndex2 = itypeToIndex(firstOfType2.itype);
+
+									if (itypeIndex == itypeIndex2)
+									{
+										positions[i] = firstOfType2.position;
+										break;
+									}
+								}
+							}
+							simulatedState = simulatedState.copyAdvanceLearn(ACTIONS.ACTION_NIL);
+						}
+
+						double zeroToFirstDistance = positions[0].dist(positions[1]);
+						double firstToSecondDistance = positions[1].dist(positions[2]);
+
+						if (zeroToFirstDistance == firstToSecondDistance && zeroToFirstDistance < state.getBlockSize())
+						{
+							isContinuousMovingEnemy[itypeIndex] = true;
+							System.out.println("NPC moves continuously, maybe :-P");
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public void learnStochasticEffekts(YoloState state) {
@@ -197,7 +257,7 @@ public class YoloKnowledge {
 			ArrayList<Observation>[] nowNpcs = folgezustand.getNpcPositions();
 			if(nowNpcs != null){
 				for (int npcNr = 0; npcNr < nowNpcs.length; npcNr++) {
-					if(!nowNpcs[npcNr].isEmpty() && !nowNpcs[npcNr].isEmpty()){
+					if(!nowNpcs[npcNr].isEmpty()){
 						//Gibt npcs dieses Typs!
 						//Check map:
 						int itypeIndex = itypeToIndex(nowNpcs[npcNr].get(0).itype);
@@ -340,11 +400,13 @@ public class YoloKnowledge {
 		byte[] inventory = getInventoryArray(lastState.getAvatarResources(), lastState.getHP());
 		int lastGameTick = lastState.getGameTick();
 		TreeSet<Event> history = currentState.getEventsHistory();
-    	while (history.size() > 0) {
+		while (history.size() > 0) {
 			Event newEvent = history.pollLast();
 			if(newEvent.gameStep != lastGameTick){
 				break;
 			}
+//			if(DEBUG)
+//				System.out.println("Event!");
 			int passiveItype = newEvent.passiveTypeId;
 			byte passiveIndex = itypeToIndex(passiveItype);
 			int activeItype = newEvent.activeTypeId;
@@ -368,7 +430,7 @@ public class YoloKnowledge {
 	}
 
 	private void learnAgentMovement(YoloState currentState,
-                                    YoloState lastState, ACTIONS actionDone) {
+									YoloState lastState, ACTIONS actionDone) {
 
 		if(!agentHasControlOfMovement(lastState))
 			return;
@@ -414,7 +476,7 @@ public class YoloKnowledge {
 	}
 
 	private void learnUseActionResult(YoloState currentState,
-			YoloState lastState) {
+									  YoloState lastState) {
 		if(currentState.isGameOver())
 			return;
 		SimpleState simpleBefore = lastState.getSimpleState();
@@ -544,7 +606,24 @@ public class YoloKnowledge {
 				for (Observation nearObs : nearObservations) {
 					if(simpleNow.getObservationWithIdentifier(nearObs.obsID) == null)
 						nothingGone = false;
+//					else{
+//						for (ArrayList<Observation> obsLists : currentState.getObservationList(nearObs.category)) {
+//							if(obsLists != null && !obsLists.isEmpty() && obsLists.get(0).itype == nearObs.itype){
+//								boolean found = false;
+//								for (Observation obsToCheck: obsLists) {
+//									if(obsToCheck.obsID == nearObs.obsID)
+//										found = true;
+//								}
+//								if(!found)
+//									nothingGone = false;
+//							}
+//						}
+//					}
+//						nothingGone = false;
 				}
+
+				//NothingGone doesnt work cause of bugs in the forwardModel, so:
+//				nothingGone &= objectCategory[spawnerItypeIndex] == Types.TYPE_PORTAL;
 
 				if(nothingGone){
 					if(spawnerOf[spawnerItypeIndex] != index && spawnerInfoSure[spawnerItypeIndex]){
@@ -566,7 +645,7 @@ public class YoloKnowledge {
 	}
 
 	private ArrayList<Observation> getObservationsWithIdBiggerThan(
-            YoloState currentState, int max) {
+			YoloState currentState, int max) {
 
 		int myMax = max;
 		ArrayList<Observation> set = new ArrayList<Observation>();
@@ -645,6 +724,7 @@ public class YoloKnowledge {
 					activeObjectEffects[avatarIndex][passiveIndex] = new PlayerEvent();
 
 				PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][passiveIndex];
+				//if(!(isStochasticEnemy[passiveIndex] && pEvent.getEvent(inventory).getKill()))
 				pEvent.update(inventory, false);
 			}
 		}
@@ -703,12 +783,14 @@ public class YoloKnowledge {
 							blockingMaskTheorie[itypeIndex] &= ~lastState.getSimpleState().getMask(npcX, npcY);
 
 
+
 						//Learn moveTicks:
 						byte currentMoveRule = (byte) (Integer.numberOfTrailingZeros(npcMoveModuloTicks[itypeIndex])+1);
 						int remainer = (lastState.getGameTick()+1) % currentMoveRule;
 						if(remainer > 0){
 							//Enemy moved in a gameTick where it wasnt expected to move!
 							npcMoveModuloTicks[itypeIndex] = (byte) (npcMoveModuloTicks[itypeIndex] >> (Integer.numberOfTrailingZeros(remainer)+1));
+//							System.out.println("Enemy " + now.itype + " moves all " + (Integer.numberOfTrailingZeros(npcMoveModuloTicks[itypeIndex])+1) + " ticks!");
 						}
 					}
 				}
@@ -724,24 +806,24 @@ public class YoloKnowledge {
 		Vector2d orientation = lastState.getAvatarOrientation();
 		byte[] inventory = lastState.getInventoryArray();
 		switch (action) {
-		case ACTION_DOWN:
-			if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_DOWN))
-				y++;
-			break;
-		case ACTION_UP:
-			if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_UP))
-				y--;
-			break;
-		case ACTION_RIGHT:
-			if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_RIGHT))
-				x++;
-			break;
-		case ACTION_LEFT:
-			if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_LEFT))
-				x--;
-			break;
-		default:
-			return;
+			case ACTION_DOWN:
+				if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_DOWN))
+					y++;
+				break;
+			case ACTION_UP:
+				if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_UP))
+					y--;
+				break;
+			case ACTION_RIGHT:
+				if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_RIGHT))
+					x++;
+				break;
+			case ACTION_LEFT:
+				if(orientation.equals(ORIENTATION_NULL) || orientation.equals(ORIENTATION_LEFT))
+					x--;
+				break;
+			default:
+				return;
 		}
 
 		if(!positionAufSpielfeld(x, y))
@@ -771,6 +853,25 @@ public class YoloKnowledge {
 			x = lastState.getAvatarX();
 			y = lastState.getAvatarY();
 		}
+//		int blockSize = lastState.getBlockSize();
+//		ArrayList<Observation>[] gridFields = lastState.getNpcPositions(new Vector2d(x*blockSize, y*blockSize));
+//		Observation killOption = null;
+//		int maxDistance = blockSize*blockSize*3;
+//		int nearNpcs = 0;
+//		if(gridFields != null){
+//			for (ArrayList<Observation> gridField : gridFields) {
+//				for (Observation observation : gridField) {
+//					if(observation.sqDist <= maxDistance){
+//						nearNpcs++;
+//						killOption = observation;
+//					}
+//				}
+//			}
+//			if(nearNpcs > 1)
+//				return;
+//		}
+
+
 
 		SimpleState lastSimpleState = lastState.getSimpleState();
 		//Ermittle ob gelernt werden kann:
@@ -798,13 +899,31 @@ public class YoloKnowledge {
 
 			//TODO: frueherer ansatz: possibleKillingMask = possibleKillingMask & blockingMaskTheorie[avatarIndex];
 		}
+//		System.out.println("\t Mask = " +  Integer.toBinaryString(mask));
 		int possibleEndCauseIndex = Integer.numberOfTrailingZeros(possibleKillingMask);
 		if(possibleKillingMask != 0 && possibleEndCauseIndex != avatarIndex && Integer.numberOfLeadingZeros(possibleKillingMask) + possibleEndCauseIndex == 31){
 			//Es ist genau ein Bit in der possibleKillingMask gesetzt.
+//			System.out.println("Objekt: " + possibleKillerIndex + " mit Itype: " + indexToItype(possibleKillerIndex));
 			if(activeObjectEffects[avatarIndex][possibleEndCauseIndex] == null)
 				activeObjectEffects[avatarIndex][possibleEndCauseIndex] = new PlayerEvent();
 
 			boolean win = currentState.getGameWinner() == WINNER.PLAYER_WINS;
+
+//			int categoryMissing = getFirstCategoryWhereAnObjectIsMissingInNewState(currentState, lastState);
+//			if(categoryMissing != -1){
+//				//Es ist neben dem Avatar ein weiteres Objekt verschwunden!
+//				Observation killer = getFirstObservationMissingOfCategory(currentState, lastState, categoryMissing);
+//				if(killer != null && !getPlayerEvent(lastState.getAvatar().itype, killer.itype, false).getEvent(inventory).getKill()){
+//					//Player konnte das objekt nicht toeten
+//					if(Math.abs(killer.position.x/currentState.getBlockSize() - x) + Math.abs(killer.position.y/currentState.getBlockSize() - y) <= 1){
+//						//Objekt war in meiner Naehe. Es wird mich gekillt haben!
+//
+//						possibleEndCauseIndex = itypeToIndex(killer.itype);
+//					}
+//				}
+//			}
+//			if(!Agent.UPLOAD_VERSION)
+//				System.out.println("Ende von " + indexToItype(possibleEndCauseIndex));
 			if(activeObjectEffects[avatarIndex][possibleEndCauseIndex] == null)
 				activeObjectEffects[avatarIndex][possibleEndCauseIndex] = new PlayerEvent();
 			PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][possibleEndCauseIndex];
@@ -815,7 +934,7 @@ public class YoloKnowledge {
 	}
 
 	private Observation getFirstObservationMissingOfCategory(YoloState newState,
-                                                             YoloState lastState, int category){
+															 YoloState lastState, int category){
 		ArrayList<Observation>[] currentObs = newState.getObservationList(category);
 		ArrayList<Observation>[] lastObs = lastState.getObservationList(category);
 		HashSet<Integer> map = new HashSet<Integer>();
@@ -843,7 +962,7 @@ public class YoloKnowledge {
 	}
 
 	private int getFirstCategoryWhereAnObjectIsMissingInNewState(YoloState newState,
-			YoloState lastState) {
+																 YoloState lastState) {
 		for (int categorie = 1; categorie <= 6; categorie++) {
 			ArrayList<Observation>[] currentObs = newState.getObservationList(categorie);
 			ArrayList<Observation>[] lastObs = lastState.getObservationList(categorie);
@@ -860,7 +979,7 @@ public class YoloKnowledge {
 	}
 
 	private void learnEvent(YoloState currentState, YoloState lastState,
-                            Event newEvent) {
+							Event newEvent) {
 		//TODO: lernen
 		if(!Agent.UPLOAD_VERSION && DEBUG)
 			System.out.println("Learn Event: " + newEvent.activeSpriteId + " -> " + newEvent.passiveSpriteId);
@@ -891,6 +1010,8 @@ public class YoloKnowledge {
 
 		if(!Agent.UPLOAD_VERSION && DEBUG)
 			System.out.println("Learn AgentEvent: " + indexToItype(avatarIndex) + " -> " + indexToItype(passiveIndex));
+//		if(indexToItype(avatarIndex) == 1 && indexToItype(passiveIndex) == 2)
+//			System.out.println("Aha!");
 
 		if(activeObjectEffects[avatarIndex][passiveIndex] == null)
 			activeObjectEffects[avatarIndex][passiveIndex] = new PlayerEvent();
@@ -899,6 +1020,16 @@ public class YoloKnowledge {
 
 		PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][passiveIndex];
 		PlayerEvent oEvent = (PlayerEvent) passiveObjectEffects[avatarIndex][passiveIndex];
+
+
+//		if(DEBUG){
+//			System.out.println("Erwartetes Event:");
+//			System.out.println("\tCancel:" + pEvent.willCancel(inventoryItems));
+//			System.out.println("\tSpecialEvent:" + pEvent.willTriggerSpecialEvent(inventoryItems));
+//			System.out.println(pEvent.toString());
+//		}
+
+
 
 		byte itypeAvatar, teleportToItypeAvatar = -1;
 		itypeAvatar = stateNow.getAvatar()!=null?(byte) stateNow.getAvatar().itype:-1;
@@ -917,6 +1048,9 @@ public class YoloKnowledge {
 		SimpleState simpleNow = stateNow.getSimpleState();
 		simpleNow.fullInit();
 
+
+		//boolean pushExpected = (pEvent.willTriggerSpecialEvent(inventoryItems) && pEvent.getSpecialEvent().doesMove()) || (!pEvent.willTriggerSpecialEvent(inventoryItems) && pEvent.getDefaultEvent().doesMove());
+
 		//	1. Hat sich der Spieler bewegt / Bewegen wollen?
 		boolean wasMoveAction = actionDone == ACTIONS.ACTION_DOWN || actionDone == ACTIONS.ACTION_LEFT || actionDone == ACTIONS.ACTION_RIGHT || actionDone == ACTIONS.ACTION_UP;
 
@@ -928,20 +1062,20 @@ public class YoloKnowledge {
 		if(wasMoveAction){
 			//Calculate where move should have brought us to
 			switch (actionDone) {
-			case ACTION_DOWN:
-				agentWalkTargetY++;
-				break;
-			case ACTION_UP:
-				agentWalkTargetY--;
-				break;
-			case ACTION_RIGHT:
-				agentWalkTargetX++;
-				break;
-			case ACTION_LEFT:
-				agentWalkTargetX--;
-				break;
-			default:
-				break;
+				case ACTION_DOWN:
+					agentWalkTargetY++;
+					break;
+				case ACTION_UP:
+					agentWalkTargetY--;
+					break;
+				case ACTION_RIGHT:
+					agentWalkTargetX++;
+					break;
+				case ACTION_LEFT:
+					agentWalkTargetX--;
+					break;
+				default:
+					break;
 			}
 		}
 
@@ -954,11 +1088,11 @@ public class YoloKnowledge {
 		}
 
 		//	3. Was ist mit dem passiv Object passiert?
-			//Kill, wenn es nicht mehr da ist
+		//Kill, wenn es nicht mehr da ist
 		Observation passiveBefore = simpleBefore.getObservationWithIdentifier(passiveIdentifier);
 		Observation passiveNow = simpleNow.getObservationWithIdentifier(passiveIdentifier);
 		boolean killPassive = (passiveNow == null);
-			//Push, wenn sich die position veraendert hat
+		//Push, wenn sich die position veraendert hat
 		boolean movePassive;
 		boolean itypePassiveChanged;
 		byte itypePassive;
@@ -982,18 +1116,20 @@ public class YoloKnowledge {
 		}
 
 
-		Observation activeBefore = avatarBefore;
-		Observation activeNow = avatarNow;
+		Observation activeBefore = avatarBefore;//Original before Workaround: simpleBefore.getObservationWithIdentifier(avatarIdentifier);
+		Observation activeNow = avatarNow; //Original before Workaround: simpleNow.getObservationWithIdentifier(avatarIdentifier);
 		boolean killActive = (activeNow == null);
-			//Move, wenn sich die position veraendert hat
+		//Move, wenn sich die position veraendert hat
 		boolean moveActive, itypeActiveChanged;
 		byte itypeActive;
 		if(killActive || activeBefore == null){
 			moveActive = false;
 			itypeActiveChanged = false;
+//			itypeActive = (byte) -1;
 		}else{
 			moveActive = wasMoveAction?!activeNow.position.equals(activeBefore.position):false;
 			itypeActiveChanged = activeNow.itype != activeBefore.itype;
+//			itypeActive = (byte) (itypeActiveChanged?itypeToIndex(activeNow.itype):-1);
 		}
 		//IType speichern, wenn Aenderung vorliegt,
 		if(itypeActiveChanged){
@@ -1002,7 +1138,7 @@ public class YoloKnowledge {
 			//Keine Aenderung des Itypes. Uebernehme alten Wert:
 			itypeActive = (byte) pEvent.getEvent(inventoryItemsBefore).getIType();
 		}
-
+		//System.out.println("Itype: " + itypeActive);
 		if(Math.abs(stateNow.getAvatarX()-stateBefore.getAvatarX()) + Math.abs(stateNow.getAvatarY()-stateBefore.getAvatarY()) > 2){
 			//Teleport!
 
@@ -1129,6 +1265,7 @@ public class YoloKnowledge {
 
 		if(movePassive){
 			//Passive bewegt sich weil agent dagegen laeuft.
+			//learnPushPossible(stateBefore, stateNow, agentBeforeX, agentBeforeY, avatarIndex,passiveIndex, scoreDelta);
 		}
 
 		//Lerne blocking:
@@ -1161,29 +1298,29 @@ public class YoloKnowledge {
 		boolean noMove = false;
 		Vector2d orientation = currentState.getAvatarOrientation();
 		switch (action) {
-		case ACTION_DOWN:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_DOWN))
+			case ACTION_DOWN:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_DOWN))
+					noMove = true;
+				y++;
+				break;
+			case ACTION_UP:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_UP))
+					noMove = true;
+				y--;
+				break;
+			case ACTION_RIGHT:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_RIGHT))
+					noMove = true;
+				x++;
+				break;
+			case ACTION_LEFT:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_LEFT))
+					noMove = true;
+				x--;
+				break;
+			default:
+				//TODO: Action use auf singleton checken! Wenn schon geschossen, dann true!
 				noMove = true;
-			y++;
-			break;
-		case ACTION_UP:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_UP))
-				noMove = true;
-			y--;
-			break;
-		case ACTION_RIGHT:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_RIGHT))
-				noMove = true;
-			x++;
-			break;
-		case ACTION_LEFT:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_LEFT))
-				noMove = true;
-			x--;
-			break;
-		default:
-			//TODO: Action use auf singleton checken! Wenn schon geschossen, dann true!
-			noMove = true;
 		}
 
 		if(noMove){
@@ -1200,6 +1337,8 @@ public class YoloKnowledge {
 		int mask = currentState.getSimpleState().getMask(x, y);
 
 		boolean surelyWillNotBlock = (blockingMaskTheorie[avatarIndex] & mask) == 0;
+//		if(surelyWillNotBlock)
+//			return false;
 
 		//Might Block, check PlayerEvents:
 		int playerIndex = itypeToIndex(currentState.getAvatar().itype);
@@ -1242,32 +1381,33 @@ public class YoloKnowledge {
 		int x = currentState.getAvatarX();
 		int y = currentState.getAvatarY();
 		int itype = (currentState.getAvatar() != null)?currentState.getAvatar().itype:-1;
+		//System.out.println("Was at " + x + "|" + y);
 		Vector2d orientation = currentState.getAvatarOrientation();
 		long oldHash = currentState.getHash(ignoreNPCs);
 		switch (action) {
-		case ACTION_DOWN:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_DOWN))
-				return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_DOWN.x, ORIENTATION_DOWN.y);
-			y++;
-			break;
-		case ACTION_UP:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_UP))
-				return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_UP.x, ORIENTATION_UP.y);
-			y--;
-			break;
-		case ACTION_RIGHT:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_RIGHT))
-				return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_RIGHT.x, ORIENTATION_RIGHT.y);
-			x++;
-			break;
-		case ACTION_LEFT:
-			if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_LEFT))
-				return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_LEFT.x, ORIENTATION_LEFT.y);
-			x--;
-			break;
-		default:
-			//TODO: Action use auf singleton checken! Wenn schon geschossen, dann true!
-			return null;
+			case ACTION_DOWN:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_DOWN))
+					return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_DOWN.x, ORIENTATION_DOWN.y);
+				y++;
+				break;
+			case ACTION_UP:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_UP))
+					return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_UP.x, ORIENTATION_UP.y);
+				y--;
+				break;
+			case ACTION_RIGHT:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_RIGHT))
+					return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_RIGHT.x, ORIENTATION_RIGHT.y);
+				x++;
+				break;
+			case ACTION_LEFT:
+				if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_LEFT))
+					return currentState.getModifiedHash(ignoreNPCs,x,y,itype,ORIENTATION_LEFT.x, ORIENTATION_LEFT.y);
+				x--;
+				break;
+			default:
+				//TODO: Action use auf singleton checken! Wenn schon geschossen, dann true!
+				return null;
 		}
 
 		if(!positionAufSpielfeld(x, y))
@@ -1285,6 +1425,22 @@ public class YoloKnowledge {
 
 		//TODO: ueberlegen, ob weiter wissen verwendet werden kann um hash zu generieren
 		return null;
+		/*
+
+		//Might Block, check PlayerEvents:
+		int playerIndex = itypeToIndex(currentState.getAvatar().itype);
+		for (Observation obs : currentState.getObservationGrid()[x][y]) {
+			int index = itypeToIndex(obs.itype);
+			if(activeObjectEffects[playerIndex][index] != null){
+				PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[playerIndex][index];
+				if(pEvent.getObserveCount() > 20 && pEvent.willCancel(inventory))
+					return oldHash;
+			}
+		}
+
+		//Nothing found that will block for sure, so guess action will work!
+		//TODO: ueberpruefen ob hier nicht besser null returnt werden sollte
+		return null;//currentState.getModifiedHash(ignoreNPCs,x,y,orientation.x, orientation.y);*/
 	}
 
 	public PlayerEvent getPlayerEvent(int avatar_itype, int passive_itype, boolean activeEvent) {
@@ -1478,6 +1634,47 @@ public class YoloKnowledge {
 			}
 		}
 
+		for (int x = -1, y = -1; x != 1 || y != 1 ; x++)
+		{
+			Observation possibleKiller = canBeKilledByEnemyNearby(state, x, y, ignoreTicks);
+			if (possibleKiller != null)
+			{
+				return possibleKiller;
+			}
+			else if(x == 1)
+			{
+				x = -1;
+				y++;
+			}
+
+		}
+		return null;
+	}
+
+	public Observation canBeKilledByEnemyNearby(YoloState currentState, int x, int y, boolean ignoreTicks)
+	{
+		ArrayList<Observation>[][] grid = currentState.getObservationGrid();
+		if(positionAufSpielfeld(x, y)) {
+			ArrayList<Observation> observations = grid[x][y];
+			for (Observation observation : observations) {
+				int obsIndex = itypeToIndex(observation.itype);
+				if (isContinuousMovingEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, currentState.getGameTick())))
+				{
+					//stochastic enemy at testing field, but how near is he to avatar?
+
+					Vector2d enemyPosition = observation.position;
+					Vector2d avatarPosition = currentState.getAvatarPosition();
+					double diff = enemyPosition.copy().dist(avatarPosition); //TODO:copy could be removed
+
+					if (diff/currentState.getBlockSize() < sqrt2)
+					{
+						System.out.println("Enemy nearby. Diff:"+diff+", enemyPos x|y:"+enemyPosition.x+"|"+enemyPosition.y+", avatarPos x|y"+avatarPosition.x+"|"+avatarPosition.y);
+						//enemy is nearby, could kill avatar!!
+						return observation;
+					}
+				}
+			}
+		}
 		return null;
 	}
 
@@ -1554,19 +1751,19 @@ public class YoloKnowledge {
 		else
 			return uEvent.getTriggerEvent().getScoreDelta()>0;
 	}
-	
+
 	public boolean isSpawner(int itype){
 		return spawnerOf[itypeToIndex(itype)] != -1;
 	}
-	
+
 	public int getSpawnIndexOfSpawner(int itype){
 		return spawnerOf[itypeToIndex(itype)];
 	}
-	
+
 	public boolean isSpawnable(int itype){
 		return spawnedBy[itypeToIndex(itype)] != -1;
 	}
-	
+
 	public int getSpawnerIndexOfSpawned(int itype){
 		return spawnedBy[itypeToIndex(itype)];
 	}
@@ -1579,40 +1776,44 @@ public class YoloKnowledge {
 		return isStochasticEnemy[index];
 	}
 
+	public boolean isContinuousMovingEnemy(int index) {
+		return isContinuousMovingEnemy[index];
+	}
+
 	public boolean actionsLeadsOutOfBattlefield(YoloState state, ACTIONS action) {
 		int x = state.getAvatarX();
 		int y = state.getAvatarY();
 		switch (action) {
-		case ACTION_DOWN:
-			y++;
-			break;
-		case ACTION_UP:
-			y--;
-			break;
-		case ACTION_RIGHT:
-			x++;
-			break;
-		case ACTION_LEFT:
-			x--;
-			break;
-		default:
-			return false;
+			case ACTION_DOWN:
+				y++;
+				break;
+			case ACTION_UP:
+				y--;
+				break;
+			case ACTION_RIGHT:
+				x++;
+				break;
+			case ACTION_LEFT:
+				x--;
+				break;
+			default:
+				return false;
 		}
 
 		if(!positionAufSpielfeld(x, y))
 			return true;	//Ziel ist nicht im Spielfeld!
 		return false;
 	}
-	
+
 	public boolean hasEverBeenAliveAtFieldWithItypeIndex(int avatarIndex, int passiveIndex){
 		return hasBeenAliveAt[avatarIndex][passiveIndex];
 	}
-	
+
 	public boolean canIncreaseScoreWithoutWinning(YoloState state){
 		if(state.isGameOver())
 			return false;
 		byte[] inventoryItems = state.getInventoryArray();
-		
+
 		for (int category = 0; category < 7; category++) {
 			if(category == Types.TYPE_AVATAR || category == Types.TYPE_FROMAVATAR)
 				continue;
@@ -1634,7 +1835,7 @@ public class YoloKnowledge {
 	}
 
 	public boolean canUseInteractWithSomethingAt(YoloState state) {
-		
+
 		int x = state.getAvatarX();
 		int y = state.getAvatarY();
 		if(!positionAufSpielfeld(x, y))
@@ -1650,11 +1851,11 @@ public class YoloKnowledge {
 			x++;
 		else if(orientation.equals(ORIENTATION_LEFT))
 			x--;
-		
+
 		if(!positionAufSpielfeld(x, y))
 			return false;
-		
-		
+
+
 		for (Observation obs : state.getObservationGrid()[x][y]) {
 			if(canInteractWithUse(state.getAvatar().itype, obs.itype))
 				return true;
@@ -1678,13 +1879,14 @@ public class YoloKnowledge {
 			return state.getAvatarX() == MAX_X;
 		else if(orientation.equals(ORIENTATION_DOWN))
 			return state.getAvatarX() == 0;
-		
+
 		return false;
 	}
 
 	public boolean haveEverGotScoreWithoutWinning() {
 		return haveEverGotScoreWithoutWinning;
 	}
+
 	public boolean agentHasControlOfMovement(YoloState state){
 		if(state.getAvatar() == null)
 			return true;
@@ -1695,7 +1897,7 @@ public class YoloKnowledge {
 	public void setMinusScoreIsBad(boolean minusScoreIsBad) {
 		this.minusScoreIsBad = minusScoreIsBad;
 	}
-	
+
 	public boolean isMinusScoreBad(){
 		return minusScoreIsBad;
 	}
@@ -1706,13 +1908,13 @@ public class YoloKnowledge {
 		if(!agentHasControlOfMovement(state))
 			return true;
 		int index = itypeToIndex(state.getAvatar().itype);
-		return agentItypeCounter[index] == Byte.MAX_VALUE; 
+		return agentItypeCounter[index] == Byte.MAX_VALUE;
 	}
-	
+
 	public int getBlockingMask(int index){
 		return blockingMaskTheorie[index];
 	}
-	
+
 	public int getPlayerIndexMask() {
 		return playerIndexMask;
 	}

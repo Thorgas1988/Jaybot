@@ -1,5 +1,6 @@
 package Jaybot.YOLOBOT;
 
+import core.game.Observation;
 import core.game.StateObservation;
 import core.player.AbstractPlayer;
 import Jaybot.YOLOBOT.SubAgents.BreitenSucheAgent;
@@ -12,21 +13,26 @@ import Jaybot.YOLOBOT.Util.Heuristics.HeuristicList;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import ontology.Types.ACTIONS;
 import tools.ElapsedCpuTimer;
+import tools.Vector2d;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 public class Agent extends AbstractPlayer {
 
-	public final static boolean UPLOAD_VERSION = false;
+	public final static boolean UPLOAD_VERSION = true;
 	public final static boolean DRAW_TARGET_ONLY = false;
 	public final static boolean FORCE_PAINT = false;
+	public final static boolean VIEW_ADVANCES = false;
+	public static final double PAINT_SCALE = 1;
 
 	private final List<SubAgent> subAgents;
 	private SubAgent currentSubAgent;
+	private long sum;
 	public static ElapsedCpuTimer curElapsedTimer;
-	
+
 	//CheckVariablen um ersten Schritt-Bug zu umgehen:
 	private int avatarXSpawn = -1, avatarYSpawn = -1;
 	private StateObservation lastStateObs;
@@ -38,7 +44,7 @@ public class Agent extends AbstractPlayer {
 		avatarXSpawn = startYoloState.getAvatarX();
 		avatarYSpawn = startYoloState.getAvatarY();
 		//YoloKnowledge und sonstiges Wissen hier generieren
-    	YoloKnowledge.instance = new YoloKnowledge(startYoloState);
+		YoloKnowledge.instance = new YoloKnowledge(startYoloState);
 		Heatmap.instance = new Heatmap(startYoloState);
 		HeuristicList.instance = new HeuristicList();
 
@@ -46,23 +52,52 @@ public class Agent extends AbstractPlayer {
 		BFS bfs = new BFS(startYoloState, elapsedTimer);
 		BreitenSucheAgent bsa = new BreitenSucheAgent(startYoloState,
 				elapsedTimer);
+		// PlannerAgent planner = new PlannerAgent(startYoloState,
+		// elapsedTimer);
 		subAgents = new LinkedList<>();
 		subAgents.add(bsa);
 
 		subAgents.add(new MCTHandler(startYoloState));
 		subAgents.add(bfs);
+//		subAgents.add(new TestSubAgent());
+
+//		new TestSubAgent().preRun(startYoloState, elapsedTimer);
+		// subAgents.add(planner);
+		// bsa.preRun(startYoloState, elapsedTimer);
+
+		// Planner deactiveated
+		// ElapsedCpuTimer bfsTimer = new ElapsedCpuTimer();
+		// bfsTimer.setMaxTimeMillis(elapsedTimer.remainingTimeMillis()-100);
+
+		// bfs.preRun(startYoloState, bfsTimer);
+		// if(YoloKnowledge.instance.getPushableITypes().size() == 1){
+		// ACTIONS solutionFound = planner.act(startYoloState, elapsedTimer);
+		// if(solutionFound != ACTIONS.ACTION_NIL){
+		// //Planner has solution:
+		// planner.actionsToDo.addFirst(solutionFound);
+		// }
+		// }
 
 		bfs.preRun(startYoloState, elapsedTimer);
 
 		if (!Agent.UPLOAD_VERSION)
 			System.out.println(YoloKnowledge.instance.toString());
+//		YoloKnowledge.instance.learnDeactivated = true;
 	}
 
 	@Override
 	public ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
 		curElapsedTimer = elapsedTimer;
+		// if (currentYoloState != null && VIEW_ADVANCES) {
+		// if (lastStateObs != null)
+		// VGDLViewer.paint(lastStateObs.model);
+		// lastStateObs = stateObs.copy();
+		// }
 		currentYoloState = new YoloState(stateObs);
 		YoloKnowledge.instance.learnStochasticEffekts(currentYoloState);
+		YoloKnowledge.instance.learnContinuousMovingEnemies(currentYoloState);
+
+//		System.out.println(YoloKnowledge.instance.toString());
 
 		if(currentYoloState.getGameTick() == 1){
 			//Ist erster Tick nach Spielstart:
@@ -71,7 +106,7 @@ public class Agent extends AbstractPlayer {
 				return currentYoloState.getAvatarLastAction();
 			}
 		}
-
+		//System.out.println(YoloKnowledge.instance.toString());
 		// TODO: Hier koennten allgemeine, agentunabhaengige Auswertungen
 		// geschehen, welche den aktuellen SubAgent auswaehlen
 		YoloState.currentGameScore = currentYoloState.getGameScore();
@@ -103,6 +138,9 @@ public class Agent extends AbstractPlayer {
 					+ YoloState.advanceCounter);
 			System.out.println("Time remaining: "
 					+ elapsedTimer.remainingTimeMillis());
+			sum += YoloState.advanceCounter;
+			// int avg = (int) (sum / currentYoloState.getGameTick());
+			// System.out.println("Average Steps: " + avg);
 
 			String dynamics = "Dynamic Objects:";
 			for (int i = 0; i < 32; i++) {
@@ -158,49 +196,70 @@ public class Agent extends AbstractPlayer {
 		for (SubAgent subAgent : subAgents) {
 			if (subAgent.Status == SubAgentStatus.IDLE) {
 				double subAgentWeight = subAgent.EvaluateWeight(yoloState);
+
 				if (maxWeight < subAgentWeight) {
 					maxWeight = subAgentWeight;
 					newAgent = subAgent;
 				}
 			}
 		}
+
 		return newAgent;
 	}
-	
+
 	@Override
 	public void draw(Graphics2D g) {
 		if(Agent.UPLOAD_VERSION && !FORCE_PAINT)
 			return;
 		try {
 			if(currentSubAgent != null){
-					currentSubAgent.draw(g);
+				currentSubAgent.draw(g);
 			}
-			
+
 			if(currentYoloState == null)
 				return;
-			
+
 			//Draw KillByStochastic:
 			int block_size = currentYoloState.getBlockSize();
 			int half_block = (int) (block_size * 0.5);
 
 			g.setColor(Color.black);
-
-			for (int j = 0; j < currentYoloState.getObservationGrid()[0].length; ++j) {
+			for (int j = 0; j < currentYoloState.getObservationGrid().length; ++j) {
 				for (int i = 0; i < currentYoloState.getObservationGrid().length; ++i) {
-					
+
 					//Draw TOD:
 					String print = "";
 					if(!Agent.DRAW_TARGET_ONLY)
 						if(YoloKnowledge.instance.canBeKilledByStochasticEnemyAt(currentYoloState, i,j))
 							print = "TOD";
-					
+
 					if(!Agent.DRAW_TARGET_ONLY)
-						g.drawString(print, i * block_size, j * block_size +
-							 half_block+12 );
-					
+					g.drawString(print, i * block_size, j * block_size +
+						 half_block+12 );
+
 					//Draw (stupid) raster:
 					if(!Agent.DRAW_TARGET_ONLY)
-						g.drawRect(i * block_size, j * block_size, block_size, block_size);
+					g.drawRect(i * block_size, j * block_size, block_size, block_size);
+
+
+				}
+			}
+			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
+
+			for (int k = 0; k < observations.length; k++)
+			{
+				for (Observation temp : observations[k])
+				{
+					int obsIndex = YoloKnowledge.instance.itypeToIndex(temp.itype);
+
+					if (YoloKnowledge.instance.isContinuousMovingEnemy(obsIndex))
+					{
+						double diff = currentYoloState.getAvatar().position.dist(temp.position);
+
+						g.drawString(temp.position.toString(), (int)temp.position.x, (int)temp.position.y);
+						g.drawString(diff/half_block+"", (int)temp.position.x, (int)temp.position.y + 12);
+						g.drawLine((int)temp.position.x, (int)temp.position.y, (int)currentYoloState.getAvatar().position.x, (int)currentYoloState.getAvatar().position.y);
+					}
 				}
 			}
 		} catch (Exception e) {
