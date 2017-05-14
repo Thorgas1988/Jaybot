@@ -260,28 +260,6 @@ public class Agent extends AbstractPlayer {
 						g.drawString(diff/currentYoloState.getBlockSize()+"", (int)temp.position.x, (int)temp.position.y + 12);
 						g.drawLine((int)temp.position.x, (int)temp.position.y, (int)currentYoloState.getAvatar().position.x, (int)currentYoloState.getAvatar().position.y);
 					}
-					if(!Agent.DRAW_TARGET_ONLY)
-					g.drawRect(i * block_size, j * block_size, block_size, block_size);
-
-
-				}
-			}
-			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
-
-			for (int k = 0; k < observations.length; k++)
-			{
-				for (Observation temp : observations[k])
-				{
-					int obsIndex = YoloKnowledge.instance.itypeToIndex(temp.itype);
-
-					if (YoloKnowledge.instance.isContinuousMovingEnemy(obsIndex))
-					{
-						double diff = currentYoloState.getAvatar().position.dist(temp.position);
-
-						g.drawString(temp.position.toString(), (int)temp.position.x, (int)temp.position.y);
-						g.drawString(diff/half_block+"", (int)temp.position.x, (int)temp.position.y + 12);
-						g.drawLine((int)temp.position.x, (int)temp.position.y, (int)currentYoloState.getAvatar().position.x, (int)currentYoloState.getAvatar().position.y);
-					}
 				}
 			}
 		} catch (Exception e) {
