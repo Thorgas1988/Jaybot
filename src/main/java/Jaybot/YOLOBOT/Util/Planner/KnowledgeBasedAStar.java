@@ -205,12 +205,8 @@ public class KnowledgeBasedAStar {
 					}
 
 					//Gueltiges Feld
-					//System.out.println("Gueltig:"+xNew+ "-"+yNew);
 					if(distance[xNew][yNew] == 0 || interpretedAsWall[xNew][yNew]){
-						//System.out.println("Neu gefunden:"+xNew+ "-"+yNew);
 						//Neu gefunden!
-
-
 						boolean moveBlocked = false;
 						boolean isPortalEntry = false;
 						int deadlyField = canBeKilledAtByStochasticEnemy(xNew, yNew);

@@ -403,21 +403,6 @@ public class PlannerAgent extends SubAgent {
 			return;
 
 		int half_block = (int) (block_size * 0.5);
-		/*
-		 * Vector2d target = null; for (ArrayList<Observation> obList :
-		 * curState.getImmovablePositions()) { for (Observation observation :
-		 * obList) { if (observation == null) continue;
-		 * 
-		 * // if(target == null) target = observation.position; //
-		 * observation.update(observation.itype, observation.obsID, // target,
-		 * observation.reference, observation.category);
-		 * 
-		 * // g.setColor(new Color(100, 100, 100, 100)); g.setColor(new
-		 * Color(Color.magenta.getRed(), Color.magenta .getGreen(),
-		 * Color.magenta.getBlue(), 50)); int x = (int) observation.position.x;
-		 * int y = (int) observation.position.y; g.fillRoundRect(x, y,
-		 * block_size, block_size, half_block, half_block); } }
-		 */
 
 		g.setColor(Color.black);
 

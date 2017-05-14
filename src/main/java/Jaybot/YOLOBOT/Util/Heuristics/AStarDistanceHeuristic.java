@@ -4,7 +4,7 @@ import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
 import tools.Vector2d;
 
-public class AStarDistantsHeuristic extends IModdableHeuristic {
+public class AStarDistanceHeuristic extends IModdableHeuristic {
 
 	private int[][] distance;
 	private boolean[][] isWall;
@@ -17,7 +17,7 @@ public class AStarDistantsHeuristic extends IModdableHeuristic {
 	
 	
 	
-	public AStarDistantsHeuristic(int[][] distance) {
+	public AStarDistanceHeuristic(int[][] distance) {
 		
 		this.distance = distance;
 		upperBound = -Double.MAX_VALUE;

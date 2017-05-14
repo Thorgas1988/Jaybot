@@ -8,7 +8,7 @@ import Jaybot.YOLOBOT.SubAgents.HandleMCTS.RolloutPolicies.RandomNotDeadRolloutP
 import Jaybot.YOLOBOT.SubAgents.HandleMCTS.RolloutPolicies.RolloutPolicy;
 import Jaybot.YOLOBOT.SubAgents.SubAgent;
 import Jaybot.YOLOBOT.Util.Heuristics.*;
-import Jaybot.YOLOBOT.Util.TargedChooser.TargetChooser;
+import Jaybot.YOLOBOT.Util.TargetChooser.TargetChooser;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
 import ontology.Types.ACTIONS;
@@ -33,11 +33,11 @@ public class MCTHandler extends SubAgent {
 	public static YoloState rootState;
 	public static int ROLLOUT_DEPTH = DEFAULT_ROLLOUT_DEPTH;
 	public static double epsilon = 1e-6;
-	public static AStarDistantsHeuristic aSDH;
-	public static DistanceToNpcsHeuristic npcH;
+	public static AStarDistanceHeuristic aSDH;
+	public static DistanceToNPCsHeuristic npcH;
 	public static WinHeuristic winH;
 	public static SimulateDepthHeuristic simDH;
-	public static DeadendHeuristic deH;
+	public static DeadEndHeuristic deH;
 	public static ScoreHeuristic scoreHeuristic;
 	public static OneDimensionMoveToMedianHeuristic oneDimenstionMedianHeuristic;
 	public static ScoreLookaheadHeuristic scoreLookaheadHeuristic;
@@ -49,7 +49,6 @@ public class MCTHandler extends SubAgent {
 	public static RolloutPolicy randomPolicy;
 	public static HeuristicRolloutPolicy scoreLookaheadPolicy;
 
-	// private AStarTargetChooser aStarTargetChooser;
 	private TargetChooser targetChooser;
 
 	private int deadendPos;
@@ -72,10 +71,10 @@ public class MCTHandler extends SubAgent {
 		scoreLookaheadPolicy = new HeuristicRolloutPolicy(true);
 		
 		winH = new WinHeuristic();
-		aSDH = new AStarDistantsHeuristic(null);
+		aSDH = new AStarDistanceHeuristic(null);
 		simDH = new SimulateDepthHeuristic();
-		npcH = new DistanceToNpcsHeuristic();
-		deH = new DeadendHeuristic();
+		npcH = new DistanceToNPCsHeuristic();
+		deH = new DeadEndHeuristic();
 
 		heuristics.Put(scoreHeuristic);
 		heuristics.SetWeight(HeuristicType.ScoreHeuristic, 50);
@@ -106,15 +105,10 @@ public class MCTHandler extends SubAgent {
 		if (rootState.isOneDimensionGame())
 			ROLLOUT_DEPTH = 10;
 
-		// heuristics.Put(deH);
-		// heuristics.SetWeight(HeuristicType.DeadendHeuristic,
-		// rootState.isOneDimensionGame()?0:10);
-
 		// Set Policy:
 		rolloutPolicy = new EpsilonGreedyBestFirstRolloutPolicy();
 		randomPolicy = new RandomNotDeadRolloutPolicy();
 		// Init AStar Target Chooser
-		// aStarTargetChooser = new AStarTargetChooser(aSDH);
 		targetChooser = new TargetChooser(aSDH, npcH, deH);
 
 		deadendPos = heuristics
@@ -137,7 +131,6 @@ public class MCTHandler extends SubAgent {
 				ROLLOUT_DEPTH = DEFAULT_ROLLOUT_DEPTH;
 			}
 		}
-		// oneDimenstionMedianHeuristic.calculateMedian(rootState, true);
 
 		if (YoloKnowledge.instance.haveEverGotScoreWithoutWinning()){
 			heuristics.SetWeight(HeuristicType.ScoreHeuristic, 50);
@@ -269,8 +262,6 @@ public class MCTHandler extends SubAgent {
 		Observation npc = rootState.getSimpleState()
 				.getObservationWithIdentifier(npcChasing);
 		if (npc != null && !rootState.isOneDimensionGame()) {
-			// System.out.println("Current distance to chasing enemy: " +
-			// npcH.EvaluateWithoutNormalisation(rootState) );
 			int npcX = (int) (npc.position.x / block_size);
 			int npcY = (int) (npc.position.y / block_size);
 
@@ -310,17 +301,6 @@ public class MCTHandler extends SubAgent {
 						}
 					}
 
-//				g.setColor(Color.green);
-//				if (rootState.getObservationGrid()[i][j].size() > 0) {
-//					print = ""
-//							+ rootState.getObservationGrid()[i][j].get(0).category
-//							+ " | "
-//							+ rootState.getObservationGrid()[i][j].get(0).itype;
-//					if (!Agent.DRAW_TARGET_ONLY)
-//						g.drawString(print, i * block_size, j * block_size
-//								+ half_block);
-//				}
-
 				g.setColor(Color.black);
 				if (aStarDistance != null) {
 					print = " " + aStarDistance[i][j];
@@ -337,80 +317,6 @@ public class MCTHandler extends SubAgent {
 						g.setColor(Color.black);
 					}
 				}
-
-				// //simulationEnds Draws:
-				// if(simulationEndsToDraw != null){
-				// int[] ends = simulationEndsToDraw[i][j];
-				// String print;
-				//
-				// int xCenter = i * block_size + half_block -5;
-				// int xLeft = xCenter - 12;
-				// int xRight = xCenter + 12;
-				//
-				// int yCenter = (j) * block_size + half_block;
-				// int yTop = yCenter - 12;
-				// int yBottom = yCenter + 12;
-				//
-				// g.setColor(Color.black);
-				// if(rootState.getAvailableActions(true).contains(ACTIONS.ACTION_DOWN)){
-				// int nr =
-				// ends[rootState.getAvailableActions(true).indexOf(ACTIONS.ACTION_DOWN)];
-				// if(nr > 0)
-				// g.setColor(Color.magenta);
-				// print = "" + nr;
-				//
-				// g.drawString(print, xCenter, yBottom);
-				// }
-				//
-				// g.setColor(Color.black);
-				// if(rootState.getAvailableActions(true).contains(ACTIONS.ACTION_UP)){
-				// int nr =
-				// ends[rootState.getAvailableActions(true).indexOf(ACTIONS.ACTION_UP)];
-				// if(nr > 0)
-				// g.setColor(Color.magenta);
-				// print = "" + nr;
-				// g.drawString(print, xCenter, yTop);
-				// }
-				//
-				// g.setColor(Color.black);
-				// if(rootState.getAvailableActions(true).contains(ACTIONS.ACTION_LEFT)){
-				// int nr =
-				// ends[rootState.getAvailableActions(true).indexOf(ACTIONS.ACTION_LEFT)];
-				// if(nr > 0)
-				// g.setColor(Color.magenta);
-				// print = "" + nr;
-				// g.drawString(print, xLeft, yCenter);
-				// }
-				//
-				// g.setColor(Color.black);
-				// if(rootState.getAvailableActions(true).contains(ACTIONS.ACTION_RIGHT)){
-				// int nr =
-				// ends[rootState.getAvailableActions(true).indexOf(ACTIONS.ACTION_RIGHT)];
-				// if(nr > 0)
-				// g.setColor(Color.magenta);
-				// print = "" + nr;
-				// g.drawString(print, xRight, yCenter);
-				// }
-				//
-				// g.setColor(Color.black);
-				// if(rootState.getAvailableActions(true).contains(ACTIONS.ACTION_NIL)){
-				// int nr =
-				// ends[rootState.getAvailableActions(true).indexOf(ACTIONS.ACTION_NIL)];
-				// if(nr > 0)
-				// g.setColor(Color.magenta);
-				// print = "" + nr;
-				// g.drawString(print, xCenter, yCenter);
-				// }
-				//
-				// //
-				// if(rootState.getAvailableActions().contains(ACTIONS.ACTION_USE)){
-				// // print = " " +
-				// ends[rootState.getAvailableActions().indexOf(ACTIONS.ACTION_USE)];
-				// // g.drawString(print, i * block_size + third_block, j *
-				// third_block);
-				// // }
-				// }
-
 			}
 		}
 

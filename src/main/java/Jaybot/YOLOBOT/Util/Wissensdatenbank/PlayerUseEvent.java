@@ -2,7 +2,11 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 
 public class PlayerUseEvent implements YoloEventController {
-	
+
+	/**
+	 * Class description:
+	 * 		A controller of UseEvent. Maintain a UseEvent instance. Doing learning(update) and prediction(get).
+	 */
 	private UseEvent triggerEvent;
 	private boolean eventSeen;
 	

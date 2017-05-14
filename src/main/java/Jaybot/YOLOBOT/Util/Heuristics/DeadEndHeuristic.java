@@ -4,7 +4,7 @@ import Jaybot.YOLOBOT.Util.Planner.KnowledgeBasedAStar;
 import Jaybot.YOLOBOT.YoloState;
 import ontology.Types.ACTIONS;
 
-public class DeadendHeuristic extends IHeuristic {
+public class DeadEndHeuristic extends IHeuristic {
 	
 	private int[] fieldsReached;
 	private int maxFieldsReached;

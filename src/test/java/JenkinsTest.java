@@ -17,10 +17,10 @@ public class JenkinsTest {
     private static final String endLevel = "==";
     private static final String exception = "=EXCEPTION";
     private static final String game = "=GAME";
-    private static final byte[] endIterationsBytes = (endIterations+"\n").getBytes(StandardCharsets.UTF_8);
-    private static final byte[] endLevelBytes = (endLevel+"\n").getBytes(StandardCharsets.UTF_8);
-    private static final byte[] endGameBytes = (endGame+"\n").getBytes(StandardCharsets.UTF_8);
-    private static final byte[] exceptionBytes = (exception+"\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] endIterationsBytes = (endIterations + "\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] endLevelBytes = (endLevel + "\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] endGameBytes = (endGame + "\n").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] exceptionBytes = (exception + "\n").getBytes(StandardCharsets.UTF_8);
     private static final byte[] newLineBytes = "\n".getBytes(StandardCharsets.UTF_8);
 
     private static final String SCORE_PREFIX = "SCORE:";
@@ -33,25 +33,19 @@ public class JenkinsTest {
     private static final String gamesPath = "examples/gridphysics/";
 
     private static final String[] games = new String[]{
-            "aliens" , "bait", "blacksmoke", "boloadventures", "boulderchase", "boulderdash", "brainman", "butterflies",
-            "cakybaky", "camelRace", "catapults", "chase", "chipschallenge", "chopper", "cookmepasta", "crossfire",
-            "defem", "defender", "digdug", "eggomania", "enemycitadel", "escape", "factorymanager", "firecaster",
-            "firestorms", "frogs", "gymkhana", "hungrybirds", "iceandfire", "infection", "intersection", "jaws",
-            "labyrinth", "lasers", "lasers2", "lemmings", "missilecommand", "modality", "overload", "pacman",
-            "painter", "plants", "plaqueattack", "portals", "raceBet2", "realportals", "realsokoban", "roguelike",
-            "seaquest", "sheriff", "sokoban", "solarfox", "superman", "surround", "survivezombies", "tercio",
-            "thecitadel", "waitforbreakfast", "watergame", "whackamole", "zelda", "zenpuzzle"
+            "aliens", "blacksmoke", "boloadventures", "cookmepasta", "dungeon", "enemycitadel",
+            "jaws", "pacman", "racebet", "racebet2", "zelda", "zenpuzzle"
     };
 
     private static int seed;
 
     @Test
-    //@Ignore("Currently a hell lot of data is written into the System.out. But as the results are written into the System.out as well we have a problem...")
     public void shouldRunGame() throws IOException {
         // Disable System Out for this test
         System.setOut(new PrintStream(new OutputStream() {
             @Override
-            public void write(int arg0) throws IOException {}
+            public void write(int arg0) throws IOException {
+            }
         }));
 
         try (PrintStream out = new PrintStream(new FileOutputStream(plainFile))) {
@@ -74,7 +68,7 @@ public class JenkinsTest {
         createCSV();
     }
 
-    private boolean runTestGame (int gameIdx, int levelIdx, int iterationIdx, PrintStream out) throws IOException {
+    private boolean runTestGame(int gameIdx, int levelIdx, int iterationIdx, PrintStream out) throws IOException {
         String gameName = games[gameIdx];
         String game = gamesPath + gameName + ".txt";
         String level = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
@@ -88,7 +82,7 @@ public class JenkinsTest {
             return false;
         }
 
-        out.write((INFO_PREFIX + "Game-Nr=" + gameIdx + "#Game-Name=" + gameName + "#Level-Nr=" + levelIdx + "#Iteration=" + iterationIdx + "\n").getBytes(StandardCharsets.UTF_8));
+        out.write((INFO_PREFIX + "Game-Name=" + gameName + "#Level-Nr=" + levelIdx + "#Iteration=" + iterationIdx + "\n").getBytes(StandardCharsets.UTF_8));
         seed = (new Random()).nextInt();
         out.write((SEED_PREFIX + seed + "\n").getBytes(StandardCharsets.UTF_8));
 
@@ -96,7 +90,7 @@ public class JenkinsTest {
             double[] result = ArcadeMachine.runOneGame(game, level, false, Agent.class.getCanonicalName(), null, seed, 0);
 
             String strResult;
-            if (result != null && result.length>0) {
+            if (result != null && result.length > 0) {
                 strResult = SCORE_PREFIX + Double.toString(result[0]);
                 out.write(strResult.getBytes(StandardCharsets.UTF_8));
             } else {
@@ -120,11 +114,11 @@ public class JenkinsTest {
         List<String> seeds = new LinkedList<>();
         List<Double> scores = new LinkedList<>();
 
-        
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(plainFile)))){
+
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(plainFile)))) {
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(csvFile)))) {
 
-                bw.write("GameId;Game;Level;Seed1;Seed2;Seed3;Score1;Score2;Score3;MeanScore;Result1;Result2;Result3;WinPercentage\n");
+                bw.write("Game;Level;Seed1;Seed2;Seed3;Score1;Score2;Score3;MeanScore;Result1;Result2;Result3;WinPercentage\n");
 
                 while ((line = br.readLine()) != null) {
 
@@ -164,9 +158,9 @@ public class JenkinsTest {
 
     private List<String> parseInfoLine(String line) {
         List<String> result = new LinkedList<>();
-        String [] properties = line.split("#");
+        String[] properties = line.split("#");
 
-        for (int i=0; i<properties.length-1; i++) {
+        for (int i = 0; i < properties.length - 1; i++) {
             String[] keyVal = properties[i].split("=");
             result.add(keyVal[1]);
         }
@@ -190,7 +184,7 @@ public class JenkinsTest {
             sb.append(score).append(";");
             totalScore += score;
         }
-        sb.append(totalScore/scores.size()).append(";");
+        sb.append(totalScore / scores.size()).append(";");
 
         double totalWins = 0;
         for (Double score : scores) {

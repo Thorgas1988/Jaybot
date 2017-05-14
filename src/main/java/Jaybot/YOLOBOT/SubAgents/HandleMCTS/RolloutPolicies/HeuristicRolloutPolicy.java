@@ -56,19 +56,15 @@ public class HeuristicRolloutPolicy extends RolloutPolicy {
 			int myY = y;
 			switch (action) {
 			case ACTION_DOWN:
-//				if(orientation.equals(YoloKnowledge.ORIENTATION_NULL) || orientation.equals(YoloKnowledge.ORIENTATION_DOWN))
 					myY++;
 				break;
 			case ACTION_UP:
-//				if(orientation.equals(YoloKnowledge.ORIENTATION_NULL) || orientation.equals(YoloKnowledge.ORIENTATION_UP))
 					myY--;
 				break;
 			case ACTION_RIGHT:
-//				if(orientation.equals(YoloKnowledge.ORIENTATION_NULL) || orientation.equals(YoloKnowledge.ORIENTATION_RIGHT))
 					myX++;
 				break;
 			case ACTION_LEFT:
-//				if(orientation.equals(YoloKnowledge.ORIENTATION_NULL) || orientation.equals(YoloKnowledge.ORIENTATION_LEFT))
 					myX--;
 				break;
 			default:
