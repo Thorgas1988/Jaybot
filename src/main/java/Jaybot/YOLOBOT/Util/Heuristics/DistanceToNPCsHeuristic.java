@@ -7,7 +7,7 @@ import Jaybot.YOLOBOT.YoloState;
 import ontology.Types;
 import tools.Vector2d;
 
-public class DistanceToNpcsHeuristic extends IModdableHeuristic {
+public class DistanceToNPCsHeuristic extends IModdableHeuristic {
 
 	private double max;
 	private int npcObsId;

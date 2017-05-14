@@ -43,8 +43,6 @@ public class StochasticKillmap {
 				}
 			}
 		}
-		
-		//YoloKnowledge.instance.canBeKilledByStochasticEnemyAt(state, xPos, yPos);
 	}
 	
 	private void fillMapForNPC(Observation npc) {
@@ -60,9 +58,6 @@ public class StochasticKillmap {
 		npcMaskeDyn = npcMaske & ~YoloKnowledge.instance.getDynamicMask();
 		
 		fillMapForNPCRec(npc,x,y, 0, false);
-		
-//		int x = (int) ((npc.position.x - YoloKnowledge.instance.getNpcMaxMovementX(npc.itype))/blockSize);
-//		int y = (int) ((npc.position.y - YoloKnowledge.instance.getNpcMaxMovementY(npc.itype))/blockSize);
 		
 	}
 

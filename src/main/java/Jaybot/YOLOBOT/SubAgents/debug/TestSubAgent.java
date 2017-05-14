@@ -23,15 +23,8 @@ public class TestSubAgent extends SubAgent {
 
 		if(current.getAvatarY() != 9)
 			System.out.println("AHA!");
-		else
-			System.out.println("oho!");
-		
-		
-//		if(yoloState.getGameTick() < debug2.length)
-//			return debug2[yoloState.getGameTick()];
-		
+
 		return ACTIONS.ACTION_NIL;
-		
 	}
 
 	@Override

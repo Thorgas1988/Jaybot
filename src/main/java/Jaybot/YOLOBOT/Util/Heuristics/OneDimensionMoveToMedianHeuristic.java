@@ -72,8 +72,6 @@ public class OneDimensionMoveToMedianHeuristic extends IHeuristic {
 			for (Observation observation : ys.getObservationsByItype(itype)) {
 				if(isUninterestingObservation(observation, ys))
 					break;
-//				if(syso)
-//					syso = true;
 				int distanceToPlayer;
 				if(onlyXAxis){
 					distanceToPlayer = Math.abs((int)observation.position.y-myFixAxisPos);
@@ -91,19 +89,13 @@ public class OneDimensionMoveToMedianHeuristic extends IHeuristic {
 					obs.add(observation);
 					obs.add(observation);
 					obs.add(observation);
-//					if(syso)
-//						System.out.println("MedianCalc Near: " + observation.itype + " (" + observation.obsID + ")");
 				}else if ( distanceToPlayer < mediumThreshold){
 					//Is not far away, is a bit important:
 					obs.add(observation);
 					obs.add(observation);
-//					if(syso)
-//						System.out.println("MedianCalc Med : " + observation.itype + " (" + observation.obsID + ")");
 				}else{
 					//Is far away
 					obs.add(observation);
-//					if(syso)
-//						System.out.println("MedianCalc Far : " + observation.itype + " (" + observation.obsID + ")");
 				}
 			}
 		}

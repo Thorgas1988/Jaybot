@@ -99,8 +99,6 @@ public abstract class MCTNode {
 		while (!getState().isGameOver() && depth < MCTHandler.ROLLOUT_DEPTH) {
 
 			//Is fully Expanded
-//				if(forceValidActionsDontChange)
-//					System.out.print("!!!");
 			MCTNode bestChild = uSBSelectChild();
 			if(bestChild == null){
 				//have no good child (none at all)
@@ -186,7 +184,6 @@ public abstract class MCTNode {
 			newState = oldState.copyAdvanceLearn(nextAction);
 
 			boolean shouldBackTrack = newState.isGameOver() && newState.getGameWinner() != WINNER.PLAYER_WINS;
-//			shouldBackTrack |= !YoloKnowledge.instance.haveEverGotScoreWithoutWinning() && rootScore > newState.getGameScore();
 			if(shouldBackTrack){
 				//Random walk in den Tod!
 				//Backtracke und nimm andere Aktion!
@@ -201,10 +198,7 @@ public abstract class MCTNode {
 				newState = oldState;
 			}else{
 				//Random walk lebt!
-
 				//Check A-Star Target Reached:
-
-
 				if(!targetReached && MCTHandler.heuristicToUse != null && YoloKnowledge.instance.positionAufSpielfeld(newState.getAvatarX(), newState.getAvatarY())){
 					double heuristicValue = MCTHandler.heuristicToUse.EvaluateWithoutNormalisation(newState);
 					summedHeuristicUntilTargetReached -= heuristicValue;
@@ -337,12 +331,6 @@ public abstract class MCTNode {
 				}
 			}
 		}
-//		if(MCTHandler.useNonNegativeScore && bestHasScoreLoss){
-//			if(haveActionWithoutScoreLoss){
-//				System.out.println("Other action");
-//				return bestActionWithoutScoreLoss;
-//			}
-//		}
 
 		return actionToTake;
 	}

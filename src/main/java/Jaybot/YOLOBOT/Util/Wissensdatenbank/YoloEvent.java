@@ -49,12 +49,9 @@ public class YoloEvent extends Event {
 		byteEvents[3] = -1;	//Standartmaessig kein Teleport!
 		byteEvents[4] = -1;	//Standartmaessig keine Inventarerhoehungen
 		byteEvents[5] = -1;	//Standartmaessig keine Inventarsenkungen
-		
-		
 		boolEvents[2] = true; 	//Initial wird Bewegen auf ja geschaetzt
 		
 	}
-
 
     @Override
     public String toString() {
@@ -76,10 +73,6 @@ public class YoloEvent extends Event {
             retVal += "\n\t Win the game!";
         if(boolEventsPropability[2] > MIN_VALUE && boolEvents[2])
             retVal += "\n\t Move";
-
-//		if(!hasMovedOnce)
-//			retVal += "\n\t Object will not move!";
-
 
         return retVal;
     }
@@ -186,7 +179,7 @@ public class YoloEvent extends Event {
      * @param win terminal statew
      * @param addInventory change of the avatar inventory
      * @param removeInventory change of the avatar inventory
-     * @return int likely value
+     * @return int likely value from 0 (min) to 511 (max)
      * @author of documentation: Thomas
      */
     public int likelyValue(byte newItype, boolean push, byte scoreDelta,
@@ -208,26 +201,35 @@ public class YoloEvent extends Event {
         return likely;
     }
 
+	/**
+	 * Calculates the likelyValue between this and the given YoloEvent.
+	 * @param e The other YoloEvent to compare this YoloEvent to.
+	 * @return integer between 0 (min) and 511 (max)
+	 */
+	public int likelyValue(YoloEvent e) {
+		return likelyValue(e.getIType(), e.getMove(), e.getScoreDelta(), e.getKill(), e.getSpawns(), e.getTeleportTo(), e.getWinGame(), e.getAddInventorySlotItem(), e.getRemoveInventorySlotItem());
+	}
+
 
 
 // Following are 9 getters in the order of their index in the Events Array
 
-	public int getIType(){
+	public byte getIType(){
 		return byteEvents[0];
 	}
-	public int getScoreDelta(){
+	public byte getScoreDelta(){
 		return byteEvents[1];
 	}
-	public int getSpawns(){
+	public byte getSpawns(){
 		return byteEvents[2];
 	}
-	public int getTeleportTo(){
+	public byte getTeleportTo(){
 		return byteEvents[3];
 	}
-	public int getAddInventorySlotItem(){
+	public byte getAddInventorySlotItem(){
 		return byteEvents[4];
 	}
-	public int getRemoveInventorySlotItem(){
+	public byte getRemoveInventorySlotItem(){
 		return byteEvents[5];
 	}
 	public boolean getKill(){
