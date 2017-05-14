@@ -213,7 +213,7 @@ public class Agent extends AbstractPlayer {
 			return;
 		try {
 			if(currentSubAgent != null){
-				//currentSubAgent.draw(g);
+				currentSubAgent.draw(g);
 			}
 
 			if(currentYoloState == null)
@@ -233,15 +233,13 @@ public class Agent extends AbstractPlayer {
 						if(YoloKnowledge.instance.canBeKilledByStochasticEnemyAt(currentYoloState, i,j))
 							print = "TOD";
 
-					//if(!Agent.DRAW_TARGET_ONLY)
-					//g.drawString(print, i * block_size, j * block_size +
-					//	 half_block+12 );
+					if(!Agent.DRAW_TARGET_ONLY)
+					g.drawString(print, i * block_size, j * block_size +
+						 half_block+12 );
 
 					//Draw (stupid) raster:
-					//if(!Agent.DRAW_TARGET_ONLY)
-					//g.drawRect(i * block_size, j * block_size, block_size, block_size);
-
-
+					if(!Agent.DRAW_TARGET_ONLY)
+					g.drawRect(i * block_size, j * block_size, block_size, block_size);
 				}
 			}
 			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
@@ -257,7 +255,7 @@ public class Agent extends AbstractPlayer {
 						double diff = currentYoloState.getAvatar().position.dist(temp.position);
 
 						g.drawString(temp.position.toString(), (int)temp.position.x, (int)temp.position.y);
-						g.drawString(diff/currentYoloState.getBlockSize()+"", (int)temp.position.x, (int)temp.position.y + 12);
+						g.drawString(diff/half_block+"", (int)temp.position.x, (int)temp.position.y + 12);
 						g.drawLine((int)temp.position.x, (int)temp.position.y, (int)currentYoloState.getAvatar().position.x, (int)currentYoloState.getAvatar().position.y);
 					}
 				}

@@ -77,14 +77,13 @@ public class OneTypeAStar {
 					for (int yNew = y - 1; yNew <= y + 1; yNew++){
 						if (yNew >= 0 && yNew < grid[xNew].length && (xNew == x || yNew == y)){
 							//Gueltiges Feld
-							//System.out.println("Gueltig:"+xNew+ "-"+yNew);
 							if(distance[xNew][yNew] == 0){
-								//System.out.println("Neu gefunden:"+xNew+ "-"+yNew);
 								//Neu gefunden!
 								distance[xNew][yNew] = newDistance;
 								from[xNew][yNew] = (byte)((xNew < x?0:(xNew > x?1:(yNew < y?2:3))));
-								
-								boolean moveAvailable = grid[xNew][yNew].size() == 0;	//Bei keiner Observation ist es begehbar!
+
+								//Bei keiner Observation ist es begehbar!
+								boolean moveAvailable = grid[xNew][yNew].size() == 0;
 								
 								for (Observation obs : grid[xNew][yNew]) {
 									moveAvailable |= obs.itype == itype_ground;

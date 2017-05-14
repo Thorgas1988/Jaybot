@@ -45,15 +45,12 @@ public class SingleTreeNode
         lastBounds[1] = curBounds[1];
 
         long remaining = elapsedTimer.remainingTimeMillis();
-        //int numIters = 0;
         while(remaining > 10)   {
             SingleTreeNode selected = treePolicy();
             double delta = selected.rollOut();
             backUp(selected, delta);
             remaining = elapsedTimer.remainingTimeMillis();
-            //numIters++;
         }
-        //System.out.println("-- " + numIters + " --");
     }
 
     public SingleTreeNode treePolicy() {
@@ -67,7 +64,6 @@ public class SingleTreeNode
 
             } else {
                 SingleTreeNode next = cur.uct();
-                //SingleTreeNode next = cur.egreedy();
                 cur = next;
             }
         }
