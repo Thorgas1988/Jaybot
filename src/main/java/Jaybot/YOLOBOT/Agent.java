@@ -13,6 +13,7 @@ import Jaybot.YOLOBOT.Util.Heuristics.HeuristicList;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import ontology.Types.ACTIONS;
 import tools.ElapsedCpuTimer;
+import tools.Vector2d;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public class Agent extends AbstractPlayer {
 	private SubAgent currentSubAgent;
 	private long sum;
 	public static ElapsedCpuTimer curElapsedTimer;
-	
+
 	//CheckVariablen um ersten Schritt-Bug zu umgehen:
 	private int avatarXSpawn = -1, avatarYSpawn = -1;
 	private StateObservation lastStateObs;
@@ -43,7 +44,7 @@ public class Agent extends AbstractPlayer {
 		avatarXSpawn = startYoloState.getAvatarX();
 		avatarYSpawn = startYoloState.getAvatarY();
 		//YoloKnowledge und sonstiges Wissen hier generieren
-    	YoloKnowledge.instance = new YoloKnowledge(startYoloState);
+		YoloKnowledge.instance = new YoloKnowledge(startYoloState);
 		Heatmap.instance = new Heatmap(startYoloState);
 		HeuristicList.instance = new HeuristicList();
 
@@ -205,43 +206,40 @@ public class Agent extends AbstractPlayer {
 
 		return newAgent;
 	}
-	
+
 	@Override
 	public void draw(Graphics2D g) {
 		if(Agent.UPLOAD_VERSION && !FORCE_PAINT)
 			return;
 		try {
 			if(currentSubAgent != null){
-					currentSubAgent.draw(g);
+				currentSubAgent.draw(g);
 			}
-			
+
 			if(currentYoloState == null)
 				return;
-			
+
 			//Draw KillByStochastic:
 			int block_size = currentYoloState.getBlockSize();
 			int half_block = (int) (block_size * 0.5);
 
 			g.setColor(Color.black);
-
-			for (int j = 0; j < currentYoloState.getObservationGrid()[0].length; ++j) {
+			for (int j = 0; j < currentYoloState.getObservationGrid().length; ++j) {
 				for (int i = 0; i < currentYoloState.getObservationGrid().length; ++i) {
-					
+
 					//Draw TOD:
 					String print = "";
 					if(!Agent.DRAW_TARGET_ONLY)
 						if(YoloKnowledge.instance.canBeKilledByStochasticEnemyAt(currentYoloState, i,j))
 							print = "TOD";
-					
+
 					if(!Agent.DRAW_TARGET_ONLY)
-						g.drawString(print, i * block_size, j * block_size +
-							 half_block+12 );
-					
+					g.drawString(print, i * block_size, j * block_size +
+						 half_block+12 );
+
 					//Draw (stupid) raster:
 					if(!Agent.DRAW_TARGET_ONLY)
 					g.drawRect(i * block_size, j * block_size, block_size, block_size);
-
-
 				}
 			}
 			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
@@ -257,7 +255,7 @@ public class Agent extends AbstractPlayer {
 						double diff = currentYoloState.getAvatar().position.dist(temp.position);
 
 						g.drawString(temp.position.toString(), (int)temp.position.x, (int)temp.position.y);
-						g.drawString(diff/currentYoloState.getBlockSize()+"", (int)temp.position.x, (int)temp.position.y + 12);
+						g.drawString(diff/half_block+"", (int)temp.position.x, (int)temp.position.y + 12);
 						g.drawLine((int)temp.position.x, (int)temp.position.y, (int)currentYoloState.getAvatar().position.x, (int)currentYoloState.getAvatar().position.y);
 					}
 				}
