@@ -106,7 +106,7 @@ public class PlayerEvent implements YoloEventController {
 
         int maxIndex = 0;
         int maxLikelyValue = -1;
-        int likelyLimit = 400;
+        int likelyLimit = 200;
 
         for (int i = 0; i < specialEvent.size(); i++) {
             YoloEvent event = specialEvent.get(i);
