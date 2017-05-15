@@ -1661,12 +1661,21 @@ public class YoloKnowledge {
 				if (isContinuousMovingEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, currentState.getGameTick())))
 				{
 					//stochastic enemy at testing field, but how near is he to avatar?
+					int halfBlock = currentState.getBlockSize()/2;
+
 
 					Vector2d enemyPosition = observation.position;
-					Vector2d avatarPosition = currentState.getAvatarPosition();
-					double diff = enemyPosition.copy().dist(avatarPosition); //TODO:copy could be removed
+                    Vector2d avatarPosition = currentState.getAvatarPosition();
+                    double ePosX = enemyPosition.x+ halfBlock;
+                    double ePosY = enemyPosition.y+ halfBlock;
+                    double aPosX = avatarPosition.x+ halfBlock;
+                    double aPosY = avatarPosition.y+ halfBlock;
 
-					if (diff/currentState.getBlockSize() < sqrt2)
+                    Vector2d diffVec = new Vector2d(ePosX - aPosX, ePosY - aPosY);
+                    double diff = diffVec.dist(diffVec);
+                    double diffBlocks = diff / currentState.getBlockSize();
+
+					if (diffBlocks < 2.0)
 					{
 						System.out.println("Enemy nearby. Diff:"+diff+", enemyPos x|y:"+enemyPosition.x+"|"+enemyPosition.y+", avatarPos x|y"+avatarPosition.x+"|"+avatarPosition.y);
 						//enemy is nearby, could kill avatar!!
