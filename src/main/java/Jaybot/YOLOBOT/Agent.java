@@ -240,8 +240,6 @@ public class Agent extends AbstractPlayer {
 					//Draw (stupid) raster:
 					if(!Agent.DRAW_TARGET_ONLY)
 					g.drawRect(i * block_size, j * block_size, block_size, block_size);
-
-
 				}
 			}
 			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
