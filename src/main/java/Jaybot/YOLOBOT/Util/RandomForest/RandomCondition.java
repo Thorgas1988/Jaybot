@@ -15,7 +15,7 @@ public class RandomCondition extends Condition {
         this.lowerThan = rand.nextBoolean();
 
         byte[] b = new byte[1];
-        rand.nextBytes(b)
+        rand.nextBytes(b);
         this.limit = b[0];
     }
 }

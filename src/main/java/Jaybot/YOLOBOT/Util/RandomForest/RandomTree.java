@@ -14,7 +14,7 @@ public class RandomTree {
     private final RandomCondition[] conditions;
     private final Map<boolean[], Map<YoloEvent, Integer>> classes = new HashMap<>();
 
-    public RandomTree(byte treeSize) {
+    public RandomTree(int treeSize) {
         conditions = new RandomCondition[treeSize];
 
         for (int i=0; i<treeSize; i++) {

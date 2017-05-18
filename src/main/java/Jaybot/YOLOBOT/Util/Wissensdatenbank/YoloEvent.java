@@ -214,6 +214,36 @@ public class YoloEvent extends Event {
 
 // Following are 9 getters in the order of their index in the Events Array
 
+
+	public void setIType(byte iType) {
+		byteEvents[0] = iType;
+	}
+	public void setScoreDelta(byte scoreDelta){
+		byteEvents[1] = scoreDelta;
+	}
+	public void setSpawns(byte spawns){
+		byteEvents[2] = spawns;
+	}
+	public void setTeleportTo(byte teleportTo){
+		byteEvents[3] = teleportTo;
+	}
+	public void setAddInventorySlotItem(byte addInventorySlotItem){
+		byteEvents[4] = addInventorySlotItem;
+	}
+	public void setRemoveInventorySlotItem(byte removeInventorySlotItem){
+		byteEvents[5] = removeInventorySlotItem;
+	}
+	public void setKill(boolean kill){
+		boolEvents[0] = kill;
+	}
+	public void setWinGame(boolean winGame){
+		boolEvents[1] = winGame;
+	}
+	public void setMove(boolean move){
+		boolEvents[2] = move;
+	}
+
+
 	public byte getIType(){
 		return byteEvents[0];
 	}

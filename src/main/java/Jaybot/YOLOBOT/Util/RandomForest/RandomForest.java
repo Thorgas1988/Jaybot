@@ -12,7 +12,7 @@ public class RandomForest {
 
     private RandomTree[] forest;
 
-    public RandomForest(byte treeSize, int forestSize) {
+    public RandomForest(int treeSize, int forestSize) {
         forest = new RandomTree[forestSize];
 
         for (int treeIndex = 0; treeIndex < forestSize; treeIndex++) {
