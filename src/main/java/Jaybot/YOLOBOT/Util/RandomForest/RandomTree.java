@@ -24,8 +24,9 @@ public class RandomTree {
 
     private boolean[] getTreePath(byte[] inventory) {
         boolean[] path = new boolean[conditions.length];
+        int limit = Math.min(inventory.length, conditions.length);
 
-        for (int i = 0; i<inventory.length; i++) {
+        for (int i = 0; i<limit; i++) {
             path[i] = conditions[i].conditionIsTrue(inventory[i]);
         }
 
@@ -34,6 +35,10 @@ public class RandomTree {
 
     public YoloEvent getEvent(byte[] inventory) {
         Map<YoloEvent, Integer> events = classes.get(getTreePath(inventory));
+
+        if (events == null) {
+            return null;
+        }
 
         int max = Integer.MIN_VALUE;
         YoloEvent resultEvent = null;

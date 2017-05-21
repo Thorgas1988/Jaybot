@@ -38,7 +38,7 @@ public class RandomForest {
     public YoloEvent getEvent(byte[] inventory) {
         Map<YoloEvent, Integer> eventFrequencies = new HashMap<>();
         int maxFrequency = -1;
-        YoloEvent maxYoloEvent = null;
+        YoloEvent maxYoloEvent = new YoloEvent();
 
         for (RandomTree tree : forest) {
             YoloEvent event = tree.getEvent(inventory);

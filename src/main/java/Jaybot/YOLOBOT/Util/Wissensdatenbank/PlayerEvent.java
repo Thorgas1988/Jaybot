@@ -27,7 +27,7 @@ public class PlayerEvent implements YoloEventController {
         observeCount = 0;
         cancelCount = 0;
         eventCount = 0;
-        specialEventRandomForest = new RandomForest(10, 1000);
+        specialEventRandomForest = new RandomForest(4, 10);
         cancelTrigger = new TriggerConditionWithInventory();
     }
 
