@@ -427,6 +427,8 @@ public class YoloKnowledge {
 			}else{
 				learnEvent(currentState, lastState, newEvent);
 			}
+
+			learnRangedUseEffect(currentState,lastState);
 		}
 	}
 
@@ -1850,7 +1852,7 @@ public class YoloKnowledge {
      * @param lastState
      */
 	public void learnRangedUseEffect(YoloState currentState, YoloState lastState) {
-        if(currentState.isGameOver())
+		if(currentState.isGameOver())
             return;
         SimpleState simpleBefore = lastState.getSimpleState();
 
@@ -1859,8 +1861,8 @@ public class YoloKnowledge {
             int useActionIndex = useEffectToSpawnIndex[i];
             if (useActionIndex != -1 && !isUseEffectRanged[i]) {
                 // go through every observation of the useEffect iType
-                for (Observation useEffect : currentState.getObservationsByItype(indexToItype(useActionIndex))) {
-                    if (!useEffect.position.equals(simpleBefore.getObservationWithIdentifier(useEffect.obsID).position)) {
+                for (Observation useEffect : lastState.getObservationsByItype(indexToItype(useActionIndex))) {
+                	if (!useEffect.position.equals(simpleBefore.getObservationWithIdentifier(useEffect.obsID).position)) {
                         isUseEffectRanged[i] = true;
                     }
                 }
