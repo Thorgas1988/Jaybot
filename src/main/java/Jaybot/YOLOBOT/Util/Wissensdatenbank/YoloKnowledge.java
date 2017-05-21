@@ -1844,6 +1844,31 @@ public class YoloKnowledge {
 		return false;
 	}
 
+    /**
+     * Go through use effects and check if they moved, if true set isUseEffectRanged
+     * @param currentState
+     * @param lastState
+     */
+	public void learnRangedUseEffect(YoloState currentState, YoloState lastState) {
+        if(currentState.isGameOver())
+            return;
+        SimpleState simpleBefore = lastState.getSimpleState();
+
+        // go through all avatar iTypes
+        for (int i = 0; i < useEffectToSpawnIndex.length; i++) {
+            int useActionIndex = useEffectToSpawnIndex[i];
+            if (useActionIndex != -1 && !isUseEffectRanged[i]) {
+                // go through every observation of the useEffect iType
+                for (Observation useEffect : currentState.getObservationsByItype(indexToItype(useActionIndex))) {
+                    if (!useEffect.position.equals(simpleBefore.getObservationWithIdentifier(useEffect.obsID).position)) {
+                        isUseEffectRanged[i] = true;
+                    }
+                }
+            }
+        }
+        // TODO: does a new useEffect have the same obsId?
+    }
+
 	public boolean canUseInteractWithSomethingAt(YoloState state) {
 		int avatarItype = state.getAvatar().itype;
 
@@ -1873,7 +1898,7 @@ public class YoloKnowledge {
 			if(canInteractWithUse(avatarItype, obs.itype))
 				return true;
 		}
-		if (isUseEffectRanged[avatarItype]) {
+		if (isUseEffectRanged[itypeToIndex(avatarItype)]) {
 			for (int i = 2; !positionAufSpielfeld(playerX + i*x, playerY + i*y); i++) {
 				for (Observation obs : state.getObservationGrid()[playerX + x][playerY + y]) {
 					if(canInteractWithUse(avatarItype, obs.itype))
