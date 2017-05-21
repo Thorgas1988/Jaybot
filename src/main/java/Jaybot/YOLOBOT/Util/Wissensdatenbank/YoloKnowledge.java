@@ -10,7 +10,6 @@ import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
 import tools.Vector2d;
 
-import java.awt.*;
 import java.util.*;
 
 public class YoloKnowledge {
@@ -60,7 +59,8 @@ public class YoloKnowledge {
 	private boolean[] spawnerInfoSure;
 	private byte[] spawnedBy;
 	private boolean[] useEffektIsSingleton;
-	private byte[] useEffektToSpawnIndex;
+	private byte[] useEffectToSpawnIndex;
+	private boolean[] isUseEffectRanged;
 
 	private byte[][] maxMovePerNPC_PerAxis;
 	private byte[] npcMoveModuloTicks;
@@ -134,7 +134,8 @@ public class YoloKnowledge {
 		spawnerInfoSure = new boolean[INDEX_MAX];
 		hasBeenAliveAt = new boolean[INDEX_MAX][INDEX_MAX];
 		useEffektIsSingleton = new boolean[INDEX_MAX];
-		useEffektToSpawnIndex = new byte[INDEX_MAX];
+		useEffectToSpawnIndex = new byte[INDEX_MAX];
+		isUseEffectRanged = new boolean[INDEX_MAX];
 		agentMoveControlCounter = new byte[INDEX_MAX];
 		agentItypeCounter = new byte[INDEX_MAX];
 
@@ -160,7 +161,7 @@ public class YoloKnowledge {
 			inventoryMax[i] = -1;
 			spawnerOf[i] = -1;
 			spawnedBy[i] = -1;
-			useEffektToSpawnIndex[i] = -1;
+			useEffectToSpawnIndex[i] = -1;
 			useEffektIsSingleton[i] = true;
 			npcMoveModuloTicks[i] = (byte) 0b1000_0000;
 		}
@@ -489,7 +490,7 @@ public class YoloKnowledge {
 					if(oldFromAvatar == null){
 						//Spawned this Object!
 						byte index = itypeToIndex(fromAvatar.itype);
-						useEffektToSpawnIndex[itypeToIndex(avatarItype)] = index;
+						useEffectToSpawnIndex[itypeToIndex(avatarItype)] = index;
 						fromAvatarMask |= 1 << index;
 						if(fromAvatarList.size()>1)
 							useEffektIsSingleton[avatarItype] = false;
@@ -497,7 +498,7 @@ public class YoloKnowledge {
 				}
 			}
 		}else{
-			useEffektToSpawnIndex[itypeToIndex(avatarItype)] = -1;
+			useEffectToSpawnIndex[itypeToIndex(avatarItype)] = -1;
 		}
 	}
 
@@ -1735,7 +1736,7 @@ public class YoloKnowledge {
 	}
 
 	public boolean canInteractWithUse(int avatarItype, int objectItype){
-		int useActionIndex = useEffektToSpawnIndex[itypeToIndex(avatarItype)];
+		int useActionIndex = useEffectToSpawnIndex[itypeToIndex(avatarItype)];
 		if(useActionIndex == -1)
 			return false;
 		PlayerUseEvent uEvent = useEffects[useActionIndex][itypeToIndex(objectItype)];
@@ -1751,7 +1752,7 @@ public class YoloKnowledge {
 	}
 
 	public boolean getIncreaseScoreIfInteractWith(int avatarItype, int objectItype){
-		int useActionIndex = useEffektToSpawnIndex[itypeToIndex(avatarItype)];
+		int useActionIndex = useEffectToSpawnIndex[itypeToIndex(avatarItype)];
 		if(useActionIndex == -1)
 			return false;
 		PlayerUseEvent uEvent = useEffects[useActionIndex][itypeToIndex(objectItype)];
@@ -1844,10 +1845,13 @@ public class YoloKnowledge {
 	}
 
 	public boolean canUseInteractWithSomethingAt(YoloState state) {
+		int avatarItype = state.getAvatar().itype;
 
-		int x = state.getAvatarX();
-		int y = state.getAvatarY();
-		if(!positionAufSpielfeld(x, y))
+		int playerX = state.getAvatarX();
+		int playerY = state.getAvatarY();
+		int x = 0;
+		int y = 0;
+		if(!positionAufSpielfeld(playerX, playerY))
 			return false;
 		Vector2d orientation = state.getAvatarOrientation();
 		if(orientation.equals(ORIENTATION_NULL))
@@ -1861,13 +1865,21 @@ public class YoloKnowledge {
 		else if(orientation.equals(ORIENTATION_LEFT))
 			x--;
 
-		if(!positionAufSpielfeld(x, y))
+		if(!positionAufSpielfeld(playerX + x, playerY + y))
 			return false;
 
 
-		for (Observation obs : state.getObservationGrid()[x][y]) {
-			if(canInteractWithUse(state.getAvatar().itype, obs.itype))
+		for (Observation obs : state.getObservationGrid()[playerX + x][playerY + y]) {
+			if(canInteractWithUse(avatarItype, obs.itype))
 				return true;
+		}
+		if (isUseEffectRanged[avatarItype]) {
+			for (int i = 2; !positionAufSpielfeld(playerX + i*x, playerY + i*y); i++) {
+				for (Observation obs : state.getObservationGrid()[playerX + x][playerY + y]) {
+					if(canInteractWithUse(avatarItype, obs.itype))
+						return true;
+				}
+			}
 		}
 		return false;
 	}
