@@ -124,6 +124,7 @@ public class PlayerEvent implements YoloEventController {
 
         int maxIndex = 0;
         int maxLikelyValue = -1;
+        
         for (int i = 0; i < specialEvent.size(); i++) {
             int likelyValue = specialEvent.get(i).likelyValue(newItype, move, scoreDelta, killed, spawnedItype, teleportTo, winGame, addInventory, removeInventory);
             if (likelyValue > maxLikelyValue) {
