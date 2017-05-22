@@ -1854,7 +1854,8 @@ public class YoloKnowledge {
 	public void learnRangedUseEffect(YoloState currentState, YoloState lastState) {
 		if(currentState.isGameOver())
             return;
-        SimpleState simpleBefore = lastState.getSimpleState();
+        SimpleState simpleCurrent = currentState.getSimpleState();
+		Observation currentUseEffect;
 
         // go through all avatar iTypes
         for (int i = 0; i < useEffectToSpawnIndex.length; i++) {
@@ -1862,8 +1863,9 @@ public class YoloKnowledge {
             if (useActionIndex != -1 && !isUseEffectRanged[i]) {
                 // go through every observation of the useEffect iType
                 for (Observation useEffect : lastState.getObservationsByItype(indexToItype(useActionIndex))) {
-                	if (!useEffect.position.equals(simpleBefore.getObservationWithIdentifier(useEffect.obsID).position)) {
-                        isUseEffectRanged[i] = true;
+					currentUseEffect = simpleCurrent.getObservationWithIdentifier(useEffect.obsID);
+					if (currentUseEffect!=null&&!useEffect.position.equals(currentUseEffect.position)) {
+						isUseEffectRanged[i] = true;
                     }
                 }
             }
@@ -1894,7 +1896,6 @@ public class YoloKnowledge {
 
 		if(!positionAufSpielfeld(playerX + x, playerY + y))
 			return false;
-
 
 		for (Observation obs : state.getObservationGrid()[playerX + x][playerY + y]) {
 			if(canInteractWithUse(avatarItype, obs.itype))
