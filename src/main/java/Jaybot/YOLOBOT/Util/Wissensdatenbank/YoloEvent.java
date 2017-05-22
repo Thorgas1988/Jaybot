@@ -132,7 +132,6 @@ public class YoloEvent extends Event {
     * @param addInventory change of the avatar inventory
     * @param removeInventory change of the avatar inventory
     * @return boolean: If "this" Event and the input "Event" are identical
-    * @author of documentation: Thomas
     */
 	public boolean hasValues(byte newItype, boolean move, byte scoreDelta,
 			boolean killed, byte spawnedItype, byte teleportTo,
@@ -180,23 +179,28 @@ public class YoloEvent extends Event {
      * @param addInventory change of the avatar inventory
      * @param removeInventory change of the avatar inventory
      * @return int likely value from 0 (min) to 511 (max)
-     * @author of documentation: Thomas
      */
     public int likelyValue(byte newItype, boolean push, byte scoreDelta,
                            boolean killed, byte spawnedItype, byte teleportTo, boolean win, byte addInventory, byte removeInventory) {
-        int likely=0,i=0;
+        int likely=0;
+        int mask = 1;
 
         int index_byte[] = {4,5,1,2,3,0};
         byte input_byte[] = {addInventory,removeInventory,scoreDelta,spawnedItype,teleportTo,newItype};
         int index_bool[] = {2,0,1};
         boolean input_bool[] = {push,killed,win};
+        for(int j=0;j<6;j++){
+			if(input_byte[j]==byteEvents[index_byte[j]]) likely += mask;
+			else likely += mask * Math.abs(byteEvents[index_byte[j]]-Math.abs(byteEvents[index_byte[j]]-input_byte[j]))
+					* (MAX_VALUE-byteEventsPropability[index_byte[j]])/(double)(MAX_VALUE-MIN_VALUE);
+			mask *= 10;
+		}
 
-        for(int j=0;j<6;j++,i++)
-            if(input_byte[j]==byteEvents[index_byte[j]] || byteEventsPropability[index_byte[j]]==MIN_VALUE)
-                likely += 1<<i;
-        for(int j=0;j<3;j++,i++)
-            if(input_bool[j]==boolEvents[index_bool[j]] || boolEventsPropability[index_bool[j]]==MIN_VALUE)
-                likely += 1<<i;
+        for(int j=0;j<3;j++){
+			if(input_bool[j]==boolEvents[index_bool[j]]) likely += mask;
+			else likely += mask * (MAX_VALUE-boolEventsPropability[index_bool[j]])/(double)(MAX_VALUE-MIN_VALUE);
+			mask *= 10;
+		}
 
         return likely;
     }
