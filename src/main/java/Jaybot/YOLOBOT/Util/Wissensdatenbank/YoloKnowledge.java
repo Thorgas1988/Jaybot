@@ -428,8 +428,9 @@ public class YoloKnowledge {
 				learnEvent(currentState, lastState, newEvent);
 			}
 
-			learnRangedUseEffect(currentState,lastState);
+
 		}
+		learnRangedUseEffect(currentState,lastState);
 	}
 
 	private void learnAgentMovement(YoloState currentState,
@@ -1874,6 +1875,7 @@ public class YoloKnowledge {
     }
 
 	public boolean canUseInteractWithSomethingAt(YoloState state) {
+
 		int avatarItype = state.getAvatar().itype;
 
 		int playerX = state.getAvatarX();
@@ -1902,10 +1904,12 @@ public class YoloKnowledge {
 				return true;
 		}
 		if (isUseEffectRanged[itypeToIndex(avatarItype)]) {
-			for (int i = 2; !positionAufSpielfeld(playerX + i*x, playerY + i*y); i++) {
+			for (int i = 2; positionAufSpielfeld(playerX + i*x, playerY + i*y); i++) {
 				for (Observation obs : state.getObservationGrid()[playerX + x][playerY + y]) {
-					if(canInteractWithUse(avatarItype, obs.itype))
+					if(canInteractWithUse(avatarItype, obs.itype)) {
+						System.out.println("range shot with distance: " + i);
 						return true;
+					}
 				}
 			}
 		}
