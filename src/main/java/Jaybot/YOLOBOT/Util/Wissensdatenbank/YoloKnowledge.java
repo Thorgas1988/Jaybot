@@ -22,6 +22,7 @@ public class YoloKnowledge {
 	public static final int AXIS_VALUE_NOT_CHANGE_INDEX = 2;
 	public static final int  FULL_INT_MASK = 0b1111_1111__1111_1111__1111_1111__1111_1111;
 	private static final boolean DEBUG = true;
+
 	public static final Vector2d ORIENTATION_NULL = new Vector2d(0, 0);
 	public static final Vector2d ORIENTATION_UP = new Vector2d(0, -1);
 	public static final Vector2d ORIENTATION_DOWN = new Vector2d(0, 1);
@@ -207,7 +208,7 @@ public class YoloKnowledge {
 		if(state.getNpcPositions() == null || state.getNpcPositions().length <= stochasticNpcCount)
 			return;
 		for (int iteration = 0; iteration < 10; iteration++) {
-			boolean haveNonStochasticEnemy = false;
+			boolean haveStochasticEnemy = false;
 			state.setNewSeed((int)(Math.random()*10000));
 			YoloState folgezustand = state.copyAdvanceLearn(ACTIONS.ACTION_NIL);
 			ArrayList<Observation>[] nowNpcs = folgezustand.getNpcPositions();
@@ -238,12 +239,12 @@ public class YoloKnowledge {
 						}
 						//Iteration fuer diesen Itype durchgelaufen
 						if(isStochasticEnemy[itypeIndex])
-							haveNonStochasticEnemy = true;		//Merke, dass es einen nicht stochastischen Gegner gab!
+							haveStochasticEnemy = true;		//Merke, dass es einen nicht stochastischen Gegner gab!
 					}
 				}
 			}
-			if(!haveNonStochasticEnemy && iteration != 0)
-				break;
+			if(haveStochasticEnemy && iteration != 0)
+				break; // "!haveStochasticEnemy"???
 		}
 		if(!Agent.UPLOAD_VERSION)
 			System.out.println("Stochastische NPCs: " + stochasticNpcCount);
@@ -1360,6 +1361,7 @@ public class YoloKnowledge {
 		//Nothing found that will block for sure, so guess action will work!
 		return false;
 	}
+
 	/**
 	 * Returnt den wahrscheinlichen Hash, den der advancte state haben wird
 	 * @param currentState Der aktuelle state
@@ -1510,6 +1512,7 @@ public class YoloKnowledge {
 	public boolean canBeKilledByStochasticEnemyAt(YoloState state, int xPos, int yPos, boolean ignoreTicks){
 		return getPossibleStochasticKillerAt(state, xPos, yPos, ignoreTicks) != null;
 	}
+
 	public Observation getPossibleStochasticKillerAt(YoloState state, int xPos, int yPos){
 		return getPossibleStochasticKillerAt(state, xPos, yPos, false);
 	}
