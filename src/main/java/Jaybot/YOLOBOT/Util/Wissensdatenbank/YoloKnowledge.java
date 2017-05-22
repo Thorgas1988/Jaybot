@@ -66,6 +66,7 @@ public class YoloKnowledge {
 	private byte[][] maxMovePerNPC_PerAxis; // See learnNpcMovement()
 	private byte[] npcMoveModuloTicks; // See learnNpcMovement()
 	private boolean haveEverGotScoreWithoutWinning;
+	private boolean[] isContinuousMovingEnemy;
 	
 	private int fromAvatarMask;
 	
@@ -116,6 +117,7 @@ public class YoloKnowledge {
 		ressourceIndexMap = new byte[RESSOURCE_MAX];
 		itypeIndexMap = new byte[ITYPE_MAX_COUNT];
 		extraPlayerItypeIndexMap = new int[ITYPE_MAX_COUNT];
+		isContinuousMovingEnemy = new boolean[ITYPE_MAX_COUNT];
 
 		ressourceIndexReverseMap = new int[INDEX_MAX];
 		itypeIndexReverseMap = new int[INDEX_MAX];
@@ -185,6 +187,69 @@ public class YoloKnowledge {
 		isStochasticEnemy = new boolean[INDEX_MAX];
 
 		learnStochasticEffekts(initialState);
+	}
+
+	double sqrt2 = Math.sqrt(2.0);
+	public void learnContinuousMovingEnemies(YoloState state)
+	{
+		ArrayList<Observation>[] npcPositions = state.getNpcPositions();
+
+		if(npcPositions != null && npcPositions.length > 0)
+		{
+			for (int npcNr = 0; npcNr < npcPositions.length; npcNr++)
+			{
+				if (npcPositions[npcNr] != null && npcPositions[npcNr].size() > 0)
+				{
+					Observation firstOfType = npcPositions[npcNr].get(0);
+					int itypeIndex = itypeToIndex(firstOfType.itype);
+
+					if (!isContinuousMovingEnemy(itypeIndex))
+					{
+						Vector2d currentPos = firstOfType.position;
+						Vector2d positions[] = {currentPos, null, null};
+
+						YoloState simulatedState = state.copyAdvanceLearn(ACTIONS.ACTION_NIL);
+						for (int i = 1; i < 3; i++)
+						{
+
+							ArrayList<Observation>[] nowNpcs = simulatedState.getNpcPositions();
+							if(nowNpcs != null)
+							{
+								for (int npcNr2 = 0; npcNr2 < nowNpcs.length; npcNr2++)
+								{
+									Observation firstOfType2 = nowNpcs[npcNr2].get(0);
+									int itypeIndex2 = itypeToIndex(firstOfType2.itype);
+
+									if (itypeIndex == itypeIndex2)
+									{
+										positions[i] = firstOfType2.position;
+										break;
+									}
+								}
+							}
+							simulatedState = simulatedState.copyAdvanceLearn(ACTIONS.ACTION_NIL);
+						}
+
+						double zeroToFirstDistance = positions[0].dist(positions[1]);
+						double firstToSecondDistance = positions[1].dist(positions[2]);
+
+						if (zeroToFirstDistance == firstToSecondDistance && zeroToFirstDistance < state.getBlockSize())
+						{
+							isContinuousMovingEnemy[itypeIndex] = true;
+							System.out.println("NPC moves continuously, maybe :-P");
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+
+
+
+	public boolean isContinuousMovingEnemy(int index) {
+		return isContinuousMovingEnemy[index];
 	}
 
 	// Setter: isStochasticEnemy[]
