@@ -118,7 +118,7 @@ public class JenkinsTest {
         try (BufferedReader br = new BufferedReader(new FileReader(new File(plainFile)))) {
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(csvFile)))) {
 
-                bw.write("Game;Level;Seed1;Seed2;Seed3;Score1;Score2;Score3;MeanScore;Result1;Result2;Result3;WinPercentage\n");
+                bw.write("Game;Level;Seed1;Seed2;Seed3;Score1;Score2;Score3;MinScore;MaxScore;MeanScore;Result1;Result2;Result3;WinPercentage\n");
 
                 while ((line = br.readLine()) != null) {
 
@@ -180,10 +180,19 @@ public class JenkinsTest {
         }
 
         double totalScore = 0;
+        double minScore = Double.MAX_VALUE;
+        double maxScore = Double.MIN_VALUE;
         for (Double score : scores) {
+            if (score > maxScore)
+                maxScore = score;
+            if (score < minScore)
+                minScore = score;
+
             sb.append(score).append(";");
             totalScore += score;
         }
+        sb.append(minScore).append(";");
+        sb.append(maxScore).append(";");
         sb.append(totalScore / scores.size()).append(";");
 
         double totalWins = 0;
