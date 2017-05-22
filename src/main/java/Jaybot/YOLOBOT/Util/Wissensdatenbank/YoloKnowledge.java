@@ -1865,13 +1865,12 @@ public class YoloKnowledge {
                 // go through every observation of the useEffect iType
                 for (Observation useEffect : lastState.getObservationsByItype(indexToItype(useActionIndex))) {
 					currentUseEffect = simpleCurrent.getObservationWithIdentifier(useEffect.obsID);
-					if (currentUseEffect!=null&&!useEffect.position.equals(currentUseEffect.position)) {
+					if (currentUseEffect != null && !useEffect.position.equals(currentUseEffect.position)) {
 						isUseEffectRanged[i] = true;
                     }
                 }
             }
         }
-        // TODO: does a new useEffect have the same obsId?
     }
 
 	public boolean canUseInteractWithSomethingAt(YoloState state) {
@@ -1904,8 +1903,9 @@ public class YoloKnowledge {
 				return true;
 		}
 		if (isUseEffectRanged[itypeToIndex(avatarItype)]) {
+			System.out.println("looked for range effect");
 			for (int i = 2; positionAufSpielfeld(playerX + i*x, playerY + i*y); i++) {
-				for (Observation obs : state.getObservationGrid()[playerX + x][playerY + y]) {
+				for (Observation obs : state.getObservationGrid()[playerX + i*x][playerY + i*y]) {
 					if(canInteractWithUse(avatarItype, obs.itype)) {
 						System.out.println("range shot with distance: " + i);
 						return true;
