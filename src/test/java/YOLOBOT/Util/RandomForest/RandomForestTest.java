@@ -20,7 +20,7 @@ public class RandomForestTest {
     private static Map<byte[], YoloEvent> trainingData = new HashMap<>();
     private static Map<byte[], YoloEvent> validationData = new HashMap<>();
 
-    private static RandomForest forest = new RandomForest(10, 100000);
+    private static RandomForest forest = new RandomForest(10, 1000);
 
     @BeforeClass
     public static void setUp() {
@@ -83,6 +83,23 @@ public class RandomForestTest {
         for (Entry<byte[], YoloEvent> entry : trainingData.entrySet()) {
             forest.train(entry.getKey(), entry.getValue());
         }
+
+        byte[][] validationClass1 = generateInventory(3, 3, new byte[]{1, 1, -1}, 2, seed);
+        byte[][] validationClass2 = generateInventory(3, 5, new byte[]{-100, 50, -20, 20, 0}, 10, seed);
+        byte[][] validationClass3 = generateInventory(3, 2, new byte[]{10, 10}, 10, seed);
+        byte[][] validationClass4 = generateInventory(3, 4, new byte[]{0, 100, 0, -100}, 20, seed);
+        for (int i=0; i < 3; i++) {
+            validationData.put(validationClass1[i], defeat);
+        }
+        for (int i=0; i < 3; i++) {
+            validationData.put(validationClass2[i], blocked);
+        }
+        for (int i=0; i < 3; i++) {
+            validationData.put(validationClass3[i], victory);
+        }
+        for (int i=0; i < 3; i++) {
+            validationData.put(validationClass4[i], other);
+        }
     }
 
     private static byte[][] generateInventory(int inventoryCount, int inventorySize, byte[] factor, int variation, long seed) {
@@ -121,8 +138,27 @@ public class RandomForestTest {
             totalCount++;
         }
 
-        System.out.println("Accuracy: " + correct / totalCount * 100);
+        System.out.println("Accuracy on TrainingSet: " + correct / totalCount * 100);
         assertEquals(78.125, correct / totalCount * 100, 0.01);
+
+    }
+
+    @Test
+    public void testOnValidationData() {
+        double totalCount = 0;
+        double correct = 0;
+
+        for (Entry<byte[], YoloEvent> entry : validationData.entrySet()) {
+            YoloEvent event = forest.getEvent(entry.getKey());
+
+            if (event.equals(entry.getValue()))
+                correct++;
+
+            totalCount++;
+        }
+
+        System.out.println("Accuracy on ValidataionSet: " + correct / totalCount * 100);
+        assertEquals(50.0, correct / totalCount * 100, 0.01);
 
     }
 }
