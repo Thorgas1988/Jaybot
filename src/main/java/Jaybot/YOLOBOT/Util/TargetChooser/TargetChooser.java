@@ -305,7 +305,7 @@ public class TargetChooser {
                 state.getAvatar().itype, observation.itype, true);
         YoloEvent event = pEvent.getEvent(state.getInventoryArray());
         int slot = event.getAddInventorySlotItem();
-        boolean winState = event.getWinGame();
+        boolean winState = event.isVictory();
         boolean scoreIncrease = event.getScoreDelta() > 0;
         boolean notSeenYet = pEvent.getObserveCount() == 0;
         boolean useActionEffective = YoloKnowledge.instance
@@ -315,9 +315,9 @@ public class TargetChooser {
         boolean decreaseScore = event.getScoreDelta() < 0;
         boolean willCancel = pEvent.willCancel(state.getInventoryArray());
         boolean isProbablyWall = (double) pEvent.getCancelCount() / (double) pEvent.getObserveCount() > 0.95;
-        boolean killedOnColision = event.getKill();
+        boolean killedOnColision = event.isDefeat();
         boolean isPortal = observation.category == Types.TYPE_PORTAL;
-        boolean iTypeChange = event.getIType() != -1;
+        boolean iTypeChange = event.getNewIType() != -1;
         boolean gotScoreThroughUseAction = YoloKnowledge.instance.getIncreaseScoreIfInteractWith(state.getAvatar().itype, observation.itype);
 
         //Is alone:
@@ -333,7 +333,7 @@ public class TargetChooser {
                     true);
             YoloEvent spawnedEvent = spawnedPEvent.getEvent(state
                     .getInventoryArray());
-            isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
+            isBadSpawner = spawnedEvent.isDefeat() || spawnedPEvent.getObserveCount() == 0;
         }
         boolean isInventoryFull = false;
         if (inventoryIncrease) {
@@ -441,7 +441,7 @@ public class TargetChooser {
                     if (YoloKnowledge.instance.isStochasticEnemy(enemyIndex)) {
                         PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent(state.getAvatar().itype, enemyItype, true);
                         YoloEvent event = enemyEvent.getEvent(state.getInventoryArray());
-                        if (event.getKill()) {
+                        if (event.isDefeat()) {
                             isFastMovingDeadlyStochasticEnemy = true;
                         }
                     }

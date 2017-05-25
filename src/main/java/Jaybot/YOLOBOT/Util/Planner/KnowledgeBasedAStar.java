@@ -244,17 +244,17 @@ public class KnowledgeBasedAStar {
 									PlayerEvent spawnCollisionEvent = YoloKnowledge.instance.getPlayerEvent(agent_itype, YoloKnowledge.instance.indexToItype(spawnIndex), true);
 									if(spawnCollisionEvent.getObserveCount() > 0){
 										YoloEvent yEvent = spawnCollisionEvent.getEvent(inventoryItems);
-										isBadSpawner = yEvent.getKill() || yEvent.getScoreDelta() < 0 || yEvent.getRemoveInventorySlotItem() != -1;
+										isBadSpawner = yEvent.isDefeat() || yEvent.getScoreDelta() < 0 || yEvent.getRemoveInventorySlotItem() != -1;
 									}
 								}
 								boolean interactable = YoloKnowledge.instance.canInteractWithUse(agent_itype, obs.itype);
 								useActionEffective[nr] = interactable;
-								boolean deadly = event.getEvent(inventoryItems).getKill() && !YoloKnowledge.instance.hasEverBeenAliveAtFieldWithItypeIndex(YoloKnowledge.instance.itypeToIndex(agent_itype),passiveIndex) && obs.category != Types.TYPE_MOVABLE;
+								boolean deadly = event.getEvent(inventoryItems).isDefeat() && !YoloKnowledge.instance.hasEverBeenAliveAtFieldWithItypeIndex(YoloKnowledge.instance.itypeToIndex(agent_itype),passiveIndex) && obs.category != Types.TYPE_MOVABLE;
 								if(deadly)
 										deadlyField = 0;
-								blockedBy[nr] = isBadSpawner || (event.getObserveCount() > 0 && (event.willCancel(inventoryItems) || !event.getEvent(inventoryItems).getMove() || (deadly ))) && !interactable;
+								blockedBy[nr] = isBadSpawner || (event.getObserveCount() > 0 && (event.willCancel(inventoryItems) || !event.getEvent(inventoryItems).isMoved() || (deadly ))) && !interactable;
 								if(!(moveBlocked||blockedBy[nr]) && !ignoreMoveables && event.getObserveCount() > 0){
-									if(obs.category == Types.TYPE_MOVABLE && !event.getEvent(inventoryItems).getMove()){
+									if(obs.category == Types.TYPE_MOVABLE && !event.getEvent(inventoryItems).isMoved()){
 										//Hier wird wegen eines MOVEABLES geblockt! Teste oneMoveableIgnoreIType
 										if(itypeAusnahme == obs.itype){
 											//Ausnahme trifft ein, dass ein bestimmter IType ein mal ignoriert werden darf!
@@ -270,7 +270,7 @@ public class KnowledgeBasedAStar {
 								if(markedItypes[obs.itype])
 									retVal.add(obs);
 								if(!moveBlocked){
-									int modType = event.getEvent(inventoryItems).getIType();
+									int modType = event.getEvent(inventoryItems).getNewIType();
 									if(modType != -1){
 										new_itype = YoloKnowledge.instance.indexToItype(modType);
 										if(changedItypeX == -1 && changedItypeY == -1){
@@ -292,7 +292,7 @@ public class KnowledgeBasedAStar {
 							//Stepping on illegal field
 							PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(agent_itype, extraIllegalMoveItype, false);	//Was passiert mit dem passive?
 							YoloEvent triggeredEvent = event.getEvent(inventoryItems);
-							if(triggeredEvent.getMove() || event.getObserveCount() == 0)	//Passive bewegt sich?
+							if(triggeredEvent.isMoved() || event.getObserveCount() == 0)	//Passive bewegt sich?
 								moveBlocked = true;
 						}
 						if(distance[xNew][yNew] == 0 || (interpretedAsWall[xNew][yNew] && !moveBlocked)){

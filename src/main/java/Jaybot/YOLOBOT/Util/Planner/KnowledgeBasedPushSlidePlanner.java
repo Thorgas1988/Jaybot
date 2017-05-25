@@ -133,7 +133,7 @@ public class KnowledgeBasedPushSlidePlanner {
 						error |= event.willCancel(inventory);
 					}else{
 						//Event ist durchfuehrbar: Vielleicht aber aendert es den Itype:
-						int iTypeChange = event.getEvent(inventory).getIType();
+						int iTypeChange = event.getEvent(inventory).getNewIType();
 						if(iTypeChange != -1)
 							player_itype = YoloKnowledge.instance.indexToItype(iTypeChange);
 					}
@@ -191,7 +191,7 @@ public class KnowledgeBasedPushSlidePlanner {
 				if(obs.category != Types.TYPE_AVATAR){
 					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(player_itype, obs.itype, true);
 					YoloEvent triggeringEvent = event.getEvent(inventory);
-					if(triggeringEvent.getIType() == -1 || YoloKnowledge.instance.indexToItype(triggeringEvent.getIType()) == player_itype)
+					if(triggeringEvent.getNewIType() == -1 || YoloKnowledge.instance.indexToItype(triggeringEvent.getNewIType()) == player_itype)
 						error |= event.willCancel(inventory) && event.getObserveCount() > 0;
 					else
 						error = true;

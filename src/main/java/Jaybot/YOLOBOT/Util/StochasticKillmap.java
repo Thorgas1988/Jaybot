@@ -34,7 +34,7 @@ public class StochasticKillmap {
 					if(YoloKnowledge.instance.isStochasticEnemy(YoloKnowledge.instance.itypeToIndex(npc.itype))){
 						PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent(state.getAvatar().itype, npc.itype, true);
 						YoloEvent event = enemyEvent.getEvent(state.getInventoryArray());
-						if(event.getKill() /*&& !YoloKnowledge.instance.canInteractWithUse(state.getAvatar().itype, enemyItype)*/){
+						if(event.isDefeat() /*&& !YoloKnowledge.instance.canInteractWithUse(state.getAvatar().itype, enemyItype)*/){
 							fillMapForNPC(npc);
 						}
 					}	

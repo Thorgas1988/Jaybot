@@ -85,15 +85,15 @@ public class PlayerEvent implements YoloEventController {
      */
     public void learnEventHappened(byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
         YoloEvent event = new YoloEvent();
-        event.setIType(newItype);
+        event.setNewIType(newItype);
         event.setAddInventorySlotItem(addInventory);
-        event.setKill(killed);
-        event.setMove(move);
+        event.setDefeat(killed);
+        event.setBlocked(!move);
         event.setRemoveInventorySlotItem(removeInventory);
         event.setScoreDelta(scoreDelta);
         event.setSpawns(spawnedItype);
         event.setTeleportTo(teleportTo);
-        event.setWinGame(winGame);
+        event.setVictory(winGame);
 
         specialEventRandomForest.train(inventoryItems, event);
     }
@@ -103,7 +103,7 @@ public class PlayerEvent implements YoloEventController {
      * 1) Increase observe counter
      * 2) Update cancel trigger with false(not canceled, but killed or other event)
      * 3) Call the getEvent() function to get special or default event
-     * IF current event predicts wrongly, that means getKill()!=kill
+     * IF current event predicts wrongly, that means isDefeat()!=kill
      * update the corresponding event by calling:
      * learnKill(kill);
      * learnNotWin();
@@ -115,7 +115,7 @@ public class PlayerEvent implements YoloEventController {
 //        observeCount++;
 //        cancelTrigger.update(inventory, false);
 //        YoloEvent currentlyExpected = getEvent(inventory);
-//        if (currentlyExpected.getKill() != kill) {
+//        if (currentlyExpected.isDefeat() != kill) {
 //            //Derzeitige annahme ist falsch!
 //            boolean specialShouldTrigger = currentlyExpected == defaultEvent;
 //            specialEventTrigger.update(inventory, specialShouldTrigger);

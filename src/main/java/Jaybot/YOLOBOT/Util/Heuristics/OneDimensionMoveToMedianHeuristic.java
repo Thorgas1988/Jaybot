@@ -146,7 +146,7 @@ public class OneDimensionMoveToMedianHeuristic extends IHeuristic {
 		boolean isUninteresting = false;
 		
 		//Kills me and is no score:
-		isUninteresting |= YoloKnowledge.instance.getPlayerEvent(ys.getAvatar().itype, observation.itype, true).getEvent(ys.getInventoryArray()).getKill() & !YoloKnowledge.instance.getIncreaseScoreIfInteractWith(ys.getAvatar().itype, observation.itype);
+		isUninteresting |= YoloKnowledge.instance.getPlayerEvent(ys.getAvatar().itype, observation.itype, true).getEvent(ys.getInventoryArray()).isDefeat() & !YoloKnowledge.instance.getIncreaseScoreIfInteractWith(ys.getAvatar().itype, observation.itype);
 		
 		return isUninteresting;
 	}

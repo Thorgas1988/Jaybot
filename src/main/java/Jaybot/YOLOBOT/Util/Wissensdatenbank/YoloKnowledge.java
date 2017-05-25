@@ -10,7 +10,6 @@ import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
 import tools.Vector2d;
 
-import java.awt.*;
 import java.util.*;
 
 public class YoloKnowledge {
@@ -724,7 +723,7 @@ public class YoloKnowledge {
 					activeObjectEffects[avatarIndex][passiveIndex] = new PlayerEvent();
 
 				PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][passiveIndex];
-				//if(!(isStochasticEnemy[passiveIndex] && pEvent.getEvent(inventory).getKill()))
+				//if(!(isStochasticEnemy[passiveIndex] && pEvent.getEvent(inventory).isDefeat()))
 				pEvent.update(inventory, false);
 			}
 		}
@@ -913,7 +912,7 @@ public class YoloKnowledge {
 //			if(categoryMissing != -1){
 //				//Es ist neben dem Avatar ein weiteres Objekt verschwunden!
 //				Observation killer = getFirstObservationMissingOfCategory(currentState, lastState, categoryMissing);
-//				if(killer != null && !getPlayerEvent(lastState.getAvatar().itype, killer.itype, false).getEvent(inventory).getKill()){
+//				if(killer != null && !getPlayerEvent(lastState.getAvatar().itype, killer.itype, false).getEvent(inventory).isDefeat()){
 //					//Player konnte das objekt nicht toeten
 //					if(Math.abs(killer.position.x/currentState.getBlockSize() - x) + Math.abs(killer.position.y/currentState.getBlockSize() - y) <= 1){
 //						//Objekt war in meiner Naehe. Es wird mich gekillt haben!
@@ -1136,7 +1135,7 @@ public class YoloKnowledge {
 			itypeActive = (byte) itypeToIndex(activeNow.itype);
 		}else{
 			//Keine Aenderung des Itypes. Uebernehme alten Wert:
-			itypeActive = (byte) pEvent.getEvent(inventoryItemsBefore).getIType();
+			itypeActive = (byte) pEvent.getEvent(inventoryItemsBefore).getNewIType();
 		}
 		//System.out.println("Itype: " + itypeActive);
 		if(Math.abs(stateNow.getAvatarX()-stateBefore.getAvatarX()) + Math.abs(stateNow.getAvatarY()-stateBefore.getAvatarY()) > 2){
@@ -1351,7 +1350,7 @@ public class YoloKnowledge {
 				PlayerEvent spawnedPEvent = getPlayerEvent(	currentState.getAvatar().itype,
 						indexToItype(iTypeIndexOfSpawner), true);
 				YoloEvent spawnedEvent = spawnedPEvent.getEvent(currentState.getInventoryArray());
-				boolean isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
+				boolean isBadSpawner = spawnedEvent.isDefeat() || spawnedPEvent.getObserveCount() == 0;
 				if(isBadSpawner){
 					return true;
 				}
@@ -1360,7 +1359,7 @@ public class YoloKnowledge {
 
 			if(activeObjectEffects[playerIndex][index] != null){
 				PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[playerIndex][index];
-				if(pEvent.getObserveCount() > 20 && (pEvent.willCancel(inventory) && !canInteractWithUse(avatarIndex,index)) || (killIsCancel && !canInteractWithUse(avatarIndex,index) && pEvent.getEvent(inventory).getKill()))
+				if(pEvent.getObserveCount() > 20 && (pEvent.willCancel(inventory) && !canInteractWithUse(avatarIndex,index)) || (killIsCancel && !canInteractWithUse(avatarIndex,index) && pEvent.getEvent(inventory).isDefeat()))
 					return true;
 			}
 		}
@@ -1481,7 +1480,7 @@ public class YoloKnowledge {
 			for (int i = 0; i < activeObjectEffects[avatarIndex].length; i++) {
 				if(activeObjectEffects[avatarIndex][i] != null){
 					PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[avatarIndex][i];
-					retVal += "\n  |-- " + indexToItype(i) + ((pEvent.willCancel(inventory) && pEvent.getObserveCount() > 0)?" blocks":(pEvent.getEvent(inventory).getKill()?" kills":" free"));
+					retVal += "\n  |-- " + indexToItype(i) + ((pEvent.willCancel(inventory) && pEvent.getObserveCount() > 0)?" blocks":(pEvent.getEvent(inventory).isDefeat()?" kills":" free"));
 				}
 			}
 		}
@@ -1555,7 +1554,7 @@ public class YoloKnowledge {
 			for (Observation observation : observations) {
 				int obsIndex = itypeToIndex(observation.itype);
 				if(isStochasticEnemy[obsIndex]){
-					if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
+					if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).isDefeat()){
 						return observation;
 					}
 				}
@@ -1572,7 +1571,7 @@ public class YoloKnowledge {
 					//Check, ob der gegner nach Links gehen kann:
 					if((int)((observation.position.x - maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) == xPos || checkDoubleMove && (int)((observation.position.x - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) == xPos){
 						//Kann sich auf xPos | yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
+						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).isDefeat()){
 							return observation;
 						}
 					}
@@ -1590,7 +1589,7 @@ public class YoloKnowledge {
 					//Check, ob der gegner nach Rechts gehen kann:
 					if((int)((observation.position.x + maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) + 1 >= xPos|| checkDoubleMove && (int)((observation.position.x + 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_X])/blockSize) + 1 >= xPos){
 						//Kann sich auf xPos | yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
+						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).isDefeat()){
 							return observation;
 						}
 					}
@@ -1608,7 +1607,7 @@ public class YoloKnowledge {
 					//Check, ob der gegner nach Unten gehen kann:
 					if((int)((observation.position.y + maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) + 1 >= yPos|| checkDoubleMove && (int)((observation.position.y + 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) + 1 >= yPos){
 						//Kann sich auf xPos | yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
+						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).isDefeat()){
 							return observation;
 						}
 					}
@@ -1626,7 +1625,7 @@ public class YoloKnowledge {
 					//Check, ob der gegner nach Oben gehen kann:
 					if((int)((observation.position.y - maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos || checkDoubleMove && (int)((observation.position.y - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos ){
 						//Kann sich auf xPos | yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
+						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).isDefeat()){
 							return observation;
 						}
 					}
@@ -1699,7 +1698,7 @@ public class YoloKnowledge {
 					if((int)((observation.position.y - maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos ||
 							checkDoubleMove && (int)((observation.position.y - 2*maxMovePerNPC_PerAxis[obsIndex][AXIS_Y])/blockSize) == yPos ){
 						//Kann sich auf xPos | yPos bewegen!
-						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).getKill()){
+						if(getPlayerEvent(avatarItype, observation.itype, true).getEvent(inventory).isDefeat()){
 							return observation;
 						}
 					}
@@ -1832,7 +1831,7 @@ public class YoloKnowledge {
 					if(obsList != null && !obsList.isEmpty()){
 						for (Observation observation : obsList) {
 							YoloEvent event = getPlayerEvent(state.getAvatar().itype, observation.itype, true).getEvent(inventoryItems);
-							if(!event.getWinGame() &&event.getScoreDelta()>0){
+							if(!event.isVictory() &&event.getScoreDelta()>0){
 								return true;
 							}
 						}
