@@ -1,3 +1,5 @@
+package Jaybot;
+
 import Jaybot.YOLOBOT.Agent;
 import core.ArcadeMachine;
 import org.junit.Ignore;

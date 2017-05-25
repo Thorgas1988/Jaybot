@@ -1,3 +1,5 @@
+package Jaybot;
+
 import Jaybot.Agent;
 import core.ArcadeMachine;
 import org.junit.Test;
