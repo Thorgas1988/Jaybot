@@ -60,4 +60,23 @@ public class RandomForest {
 
         return maxYoloEvent;
     }
+
+    @Override
+    public String toString() {
+        boolean addComma = false;
+        StringBuilder sb = new StringBuilder("{ \"forest\" : [\n");
+
+        for (RandomTree tree : forest) {
+            sb.append((addComma ? ", \n" : ""));
+            sb.append(tree.toString());
+            addComma = true;
+        }
+
+        sb.append("]}");
+        return sb.toString();
+    }
+
+    public RandomTree[] getTrees() {
+        return forest;
+    }
 }

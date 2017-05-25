@@ -18,8 +18,8 @@ public class YoloEvent {
 	public YoloEvent() {
 	}
 
-	public YoloEvent(byte newItype, byte scoreDelta, byte spawnedItype, byte teleportTo, byte addInventory,
-					 byte removeInventory, boolean blocked, boolean defeat, boolean victory) {
+	public YoloEvent(boolean blocked, boolean defeat, boolean victory, byte newItype, byte scoreDelta, byte spawnedItype, byte teleportTo, byte addInventory,
+					 byte removeInventory) {
 		setNewIType(newItype);
 		setScoreDelta(scoreDelta);
 		setSpawns(spawnedItype);

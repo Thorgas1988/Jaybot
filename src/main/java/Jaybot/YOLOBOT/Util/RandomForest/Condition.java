@@ -25,4 +25,15 @@ public class Condition {
     public boolean conditionIsFalse(byte testValue) {
         return !conditionIsTrue(testValue);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (lowerThan)
+            sb.append(" < ");
+        else
+            sb.append(" > ");
+        sb.append(limit);
+        return sb.toString();
+    }
 }

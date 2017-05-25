@@ -9,13 +9,16 @@ public class RandomCondition extends Condition {
 
     private static final Random rand = new Random(System.currentTimeMillis());
 
-    public RandomCondition() {
+    public RandomCondition(boolean onlyPositive) {
         super();
-
-        this.lowerThan = rand.nextBoolean();
+        lowerThan = rand.nextBoolean();
 
         byte[] b = new byte[1];
         rand.nextBytes(b);
-        this.limit = b[0];
+        limit = b[0];
+
+        if (onlyPositive && limit < 0) {
+            limit *= -1;
+        }
     }
 }

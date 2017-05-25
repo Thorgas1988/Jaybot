@@ -12,22 +12,23 @@ import java.util.Map.Entry;
 public class RandomTree {
 
     private final RandomCondition[] conditions;
-    private final Map<boolean[], Map<YoloEvent, Integer>> classes = new HashMap<>();
+    private final Map<TreePath, Map<YoloEvent, Integer>> classes = new HashMap<>();
 
     public RandomTree(int treeSize) {
         conditions = new RandomCondition[treeSize];
 
         for (int i=0; i<treeSize; i++) {
-            conditions[i] = new RandomCondition();
+            // we assume the count of inventory items can only be positive.
+            conditions[i] = new RandomCondition(true);
         }
     }
 
-    private boolean[] getTreePath(byte[] inventory) {
-        boolean[] path = new boolean[conditions.length];
+    private TreePath getTreePath(byte[] inventory) {
         int limit = Math.min(inventory.length, conditions.length);
+        TreePath path = new TreePath(limit);
 
         for (int i = 0; i<limit; i++) {
-            path[i] = conditions[i].conditionIsTrue(inventory[i]);
+            path.setPathNode(i, conditions[i].conditionIsTrue(inventory[i]));
         }
 
         return path;
@@ -54,7 +55,7 @@ public class RandomTree {
     }
 
     public void train(byte[] inventory, YoloEvent event) {
-        boolean[] path = getTreePath(inventory);
+        TreePath path = getTreePath(inventory);
         Map<YoloEvent, Integer> events = classes.get(path);
 
         if (events == null) {
@@ -69,4 +70,29 @@ public class RandomTree {
             events.put(event, frequency + 1);
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i<conditions.length; i++) {
+            sb.append("x").append(i).append(conditions[i].toString()).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    public String printTrainedTree() {
+        StringBuilder sb = new StringBuilder();
+
+        for (Entry<TreePath, Map<YoloEvent, Integer>> entry : classes.entrySet()) {
+            sb.append(entry.getKey().toString());
+            sb.append("\n");
+            for (Entry<YoloEvent, Integer> events : entry.getValue().entrySet()) {
+                sb.append(events.getValue()).append("x ").append(events.getKey().toString()).append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
 }
