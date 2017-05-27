@@ -4,6 +4,7 @@ import core.game.Observation;
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
+import core.player.Player;
 import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
 import tools.Utils;
@@ -352,18 +353,22 @@ public abstract class MCTNode {
 		}
 		visits++;
 	}
-	
+
 
 	public ArrayList<ACTIONS> getValidActions(YoloState curState) {
 		if(forceValidActionsDontChange)
 			return new ArrayList<ACTIONS>(validActions);
-		Observation stochasticKiller = YoloKnowledge.instance.getPossibleStochasticKillerAt(curState, curState.getAvatarX(), curState.getAvatarY());
-		boolean shouldMove = stochasticKiller != null;
-		boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller.itype) && observationIsInFrontOfAvatar(curState, stochasticKiller);
-		
-		for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
-			ACTIONS actions = (ACTIONS) iterator.next();
-			if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
+        //Observation stochasticKiller = YoloKnowledge.instance.getPossibleStochasticKillerAt(curState, curState.getAvatarX(), curState.getAvatarY());
+        //Observation stochasticKiller = YoloKnowledge.instance.getPossibleStochasticKillerInFront(curState);
+        int stochasticKiller = YoloKnowledge.instance.getStochasticEnemyItype();
+        boolean shouldMove = stochasticKiller != -1 && !curState.getObservationsByItype(stochasticKiller).isEmpty();
+        //boolean shouldMove = stochasticKiller != null;
+        //System.out.println("stochasticKiller:"+stochasticKiller);
+        //System.out.println("CanInterActWithUse: "+YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller));
+        boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller) && observationIsInFrontOfAvatar(curState, stochasticKiller);
+        for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
+            ACTIONS actions = iterator.next();
+            if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
 				iterator.remove();
 				childrenFreeCount--;
 			}
@@ -387,32 +392,55 @@ public abstract class MCTNode {
 
 	
 	private boolean observationIsInFrontOfAvatar(YoloState curState,
-			Observation observation) {
-		
+                                                 int observationIType) {
+
+        int playerX = curState.getAvatarX();
+        int playerY = curState.getAvatarY();
+        int x = 0;
+        int y = 0;
+
 		Vector2d orientation = curState.getAvatarOrientation();
-		
 		if(orientation.equals(YoloKnowledge.ORIENTATION_NULL))
 			return false;
-		
-		int x = curState.getAvatarX();
-		int y = curState.getAvatarY();
+        else if (orientation.equals(YoloKnowledge.ORIENTATION_DOWN))
+            y++;
+        else if (orientation.equals(YoloKnowledge.ORIENTATION_UP))
+            y--;
+        else if (orientation.equals(YoloKnowledge.ORIENTATION_RIGHT))
+            x++;
+        else if (orientation.equals(YoloKnowledge.ORIENTATION_LEFT))
+            x--;
 
-		if (orientation.equals(YoloKnowledge.ORIENTATION_DOWN))
-				y++;
-		else if (orientation.equals(YoloKnowledge.ORIENTATION_UP))
-				y--;
-		else if (orientation.equals(YoloKnowledge.ORIENTATION_RIGHT))
-				x++;
-		else if (orientation.equals(YoloKnowledge.ORIENTATION_LEFT))
-				x--;
-		
-		
-		if(!YoloKnowledge.instance.positionAufSpielfeld(x,y))
-			return false;
-		return  curState.getObservationGrid()[x][y].contains(observation);
-			
-	}
+        if (!YoloKnowledge.instance.positionAufSpielfeld(playerX + x, playerY + y))
+            return false;
 
+        if (observationGridContainsIType(curState, playerX + x, playerY + y, observationIType))
+            return true;
+
+        if (YoloKnowledge.instance.hasRangedUseEffect()) {
+            for (int i = 2; YoloKnowledge.instance.positionAufSpielfeld(playerX + i * x, playerY + i * y); i++) {
+                if (observationGridContainsIType(curState, playerX + i * x, playerY + i * y, observationIType)) {
+                    System.out.println("recognized observation with distance" + i);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+
+        //return  curState.getObservationGrid()[x][y].contains(observation);
+
+    }
+
+    private boolean observationGridContainsIType(YoloState state, int x, int y, int iType) {
+        ArrayList<Observation> grid = state.getObservationGrid()[x][y];
+        for (int i = 0; i < grid.size(); i++) {
+            if (grid.get(i).itype == iType)
+                return true;
+        }
+        return false;
+    }
 
 	private boolean couldGetKilledByEnemyIfIUseAction(YoloState curState,
 			ACTIONS action, boolean shouldMove, boolean canUse) {

@@ -358,7 +358,7 @@ public class YoloKnowledge {
 
 		for (Iterator<Integer> iterator = inventory.keySet().iterator(); iterator
 				.hasNext();) {
-			int itemNr = (int) iterator.next();
+			int itemNr = iterator.next();
 			int itemIndex = YoloKnowledge.instance.ressourceToIndex(itemNr);
 			byte inventoryCount = (byte) (int) inventory.get(itemNr);
 			array[itemIndex] = inventoryCount;
@@ -891,7 +891,7 @@ public class YoloKnowledge {
 
 			ArrayList<Observation> endObs = currentState.getObservationGrid()[x][y];
 			for (Iterator<Observation> iterator = endObs.iterator(); iterator.hasNext();) {
-				Observation observation = (Observation) iterator.next();
+				Observation observation = iterator.next();
 				if(lastSimpleState.getObservationWithIdentifier(observation.obsID) == null){
 					//Object didnt exist lastTick!
 					possibleKillingMask &= ~(1 <<itypeToIndex(observation.itype));
@@ -1131,16 +1131,16 @@ public class YoloKnowledge {
 			itypeActiveChanged = false;
 //			itypeActive = (byte) -1;
 		}else{
-			moveActive = wasMoveAction?!activeNow.position.equals(activeBefore.position):false;
+			moveActive = wasMoveAction && !activeNow.position.equals(activeBefore.position);
 			itypeActiveChanged = activeNow.itype != activeBefore.itype;
 //			itypeActive = (byte) (itypeActiveChanged?itypeToIndex(activeNow.itype):-1);
 		}
 		//IType speichern, wenn Aenderung vorliegt,
 		if(itypeActiveChanged){
-			itypeActive = (byte) itypeToIndex(activeNow.itype);
+			itypeActive = itypeToIndex(activeNow.itype);
 		}else{
 			//Keine Aenderung des Itypes. Uebernehme alten Wert:
-			itypeActive = (byte) pEvent.getEvent(inventoryItemsBefore).getIType();
+			itypeActive = pEvent.getEvent(inventoryItemsBefore).getIType();
 		}
 		//System.out.println("Itype: " + itypeActive);
 		if(Math.abs(stateNow.getAvatarX()-stateBefore.getAvatarX()) + Math.abs(stateNow.getAvatarY()-stateBefore.getAvatarY()) > 2){
@@ -1538,6 +1538,51 @@ public class YoloKnowledge {
 	public boolean canBeKilledByStochasticEnemyAt(YoloState state, int xPos, int yPos, boolean ignoreTicks){
 		return getPossibleStochasticKillerAt(state, xPos, yPos, ignoreTicks) != null;
 	}
+
+	public int getStochasticEnemyItype() {
+		for (int i = 0; i < 32; i++) {
+			if (isStochasticEnemy(i))
+				return i;
+		}
+		return -1;
+	}
+
+	public Observation getPossibleStochasticKillerInFront(YoloState state) {
+		int playerX = state.getAvatarX();
+		int playerY = state.getAvatarY();
+		int x = 0;
+		int y = 0;
+
+		Observation enemy = null;
+
+		Vector2d orientation = state.getAvatarOrientation();
+		if (orientation.equals(YoloKnowledge.ORIENTATION_NULL))
+			return enemy;
+		else if (orientation.equals(YoloKnowledge.ORIENTATION_DOWN))
+			y++;
+		else if (orientation.equals(YoloKnowledge.ORIENTATION_UP))
+			y--;
+		else if (orientation.equals(YoloKnowledge.ORIENTATION_RIGHT))
+			x++;
+		else if (orientation.equals(YoloKnowledge.ORIENTATION_LEFT))
+			x--;
+
+		if (!YoloKnowledge.instance.positionAufSpielfeld(playerX + x, playerY + y))
+			return enemy;
+
+		if ((enemy = getPossibleStochasticKillerAt(state, playerX + x, playerY + y)) != null)
+			return enemy;
+		if (hasRangedUseEffect()) {
+			for (int i = 2; YoloKnowledge.instance.positionAufSpielfeld(playerX + i * x, playerY + i * y); i++) {
+				if ((enemy = getPossibleStochasticKillerAt(state, playerX + i * x, playerY + i * y)) != null) {
+					System.out.println("Possible stochastic enemy in distance: " + i);
+					return enemy;
+				}
+			}
+		}
+		return enemy;
+	}
+
 	public Observation getPossibleStochasticKillerAt(YoloState state, int xPos, int yPos){
 		return getPossibleStochasticKillerAt(state, xPos, yPos, false);
 	}
@@ -1747,10 +1792,7 @@ public class YoloKnowledge {
 		if(uEvent == null || uEvent.getTriggerEvent().getWall())
 			return false;
 		else{
-			if(minusScoreIsBad && uEvent.getTriggerEvent().getScoreDelta()<0)
-				return false;
-			else
-				return true;
+			return !(minusScoreIsBad && uEvent.getTriggerEvent().getScoreDelta() < 0);
 		}
 	}
 
@@ -1813,9 +1855,7 @@ public class YoloKnowledge {
 				return false;
 		}
 
-		if(!positionAufSpielfeld(x, y))
-			return true;	//Ziel ist nicht im Spielfeld!
-		return false;
+		return !positionAufSpielfeld(x, y);
 	}
 
 	public boolean hasEverBeenAliveAtFieldWithItypeIndex(int avatarIndex, int passiveIndex){
@@ -1903,7 +1943,7 @@ public class YoloKnowledge {
 				return true;
 		}
 		if (isUseEffectRanged[itypeToIndex(avatarItype)]) {
-			System.out.println("looked for range effect");
+			//System.out.println("looked for range effect");
 			for (int i = 2; positionAufSpielfeld(playerX + i*x, playerY + i*y); i++) {
 				for (Observation obs : state.getObservationGrid()[playerX + i*x][playerY + i*y]) {
 					if(canInteractWithUse(avatarItype, obs.itype)) {
@@ -1912,6 +1952,14 @@ public class YoloKnowledge {
 					}
 				}
 			}
+		}
+		return false;
+	}
+
+	public boolean hasRangedUseEffect() {
+		for (int i = 0; i < isUseEffectRanged.length; i++) {
+			if (isUseEffectRanged[i])
+				return true;
 		}
 		return false;
 	}
