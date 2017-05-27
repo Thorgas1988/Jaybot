@@ -3,16 +3,19 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 public class YoloEvent {
 
+	public static final byte UNDEFINED = -1;
+	public static final byte NO_SCORE_CHANGE = 0;
+
 	private boolean victory;
 	private boolean defeat;
 	private boolean blocked;
 
-	private byte newIType = -1;
-	private byte scoreDelta = 0;
-	private byte spawnedIType = -1;
-	private byte teleportTo = -1;
-	private byte addInventory = -1;
-	private byte removeInventory = -1;
+	private byte newIType = UNDEFINED;
+	private byte scoreDelta = NO_SCORE_CHANGE;
+	private byte spawnedIType = UNDEFINED;
+	private byte teleportTo = UNDEFINED;
+	private byte addInventory = UNDEFINED;
+	private byte removeInventory = UNDEFINED;
 
 
 	public YoloEvent() {
