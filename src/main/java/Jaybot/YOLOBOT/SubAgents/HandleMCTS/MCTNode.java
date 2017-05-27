@@ -365,7 +365,9 @@ public abstract class MCTNode {
         //boolean shouldMove = stochasticKiller != null;
         //System.out.println("stochasticKiller:"+stochasticKiller);
         //System.out.println("CanInterActWithUse: "+YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller));
+        //TODO canInteractWithUse always false?
         boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller) && observationIsInFrontOfAvatar(curState, stochasticKiller);
+
         for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
             ACTIONS actions = iterator.next();
             if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
