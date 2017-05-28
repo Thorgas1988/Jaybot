@@ -2,7 +2,6 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,21 +13,13 @@ public class PlayerEvent implements YoloEventController {
      */
 
     private static final boolean DEBUG = true;
-
-//    private TriggerConditionWithInventory cancelTrigger;
-//    private List<TriggerConditionWithInventory> specialEventTrigger;
-
+    private TriggerConditionWithInventory cancelTrigger;
+    private List<TriggerConditionWithInventory> specialEventTrigger;
     private List<YoloEvent> specialEvent;
-
+    // 3 counters for easy decision between blocking move(class 1) and other events(class 2)
     private short observeCount;
     private short cancelCount;
     private short eventCount;
-
-    // Add by Thomas
-    private static final int _BLOCK = 0;
-    private DecisionForest decisionForest;
-    private HashMap<Integer,YoloEvent> otherEvents;
-
 
 
     /**
@@ -39,24 +30,15 @@ public class PlayerEvent implements YoloEventController {
         observeCount = 0;
         cancelCount = 0;
         eventCount = 0;
-//        cancelTrigger = new TriggerConditionWithInventory();
-//        specialEventTrigger = new LinkedList<>();
-        decisionForest = new DecisionForest();
-        decisionForest.setForestSize(10,10,100);
         specialEvent = new LinkedList<>();
-        for(int i=0;i<9;i++){
-            YoloEvent yE = new YoloEvent();
-            specialEvent.add(yE);
-        }
-        int[] attrMax = {5,5,5,5,5,5,5,5,5,5};
-        int[] attrMin = {0,0,0,0,0,0,0,0,0,0};
-        decisionForest.buildForest(attrMax,attrMin);
+        cancelTrigger = new TriggerConditionWithInventory();
+        specialEventTrigger = new LinkedList<>();
     }
 
     @Override
     public String toString() {
         StringBuilder retVal = new StringBuilder("############################\nCurrent Knowledge: ");
-        //retVal.append("\n\t Special Event Triggering = " + (eventCount == observeCount - cancelCount));
+        retVal.append("\n\t Special Event Triggering = " + (eventCount == observeCount - cancelCount));
         retVal.append("\n\t Special Event Description: \n");
         for (YoloEvent event : specialEvent) {
             retVal.append(event.toString() + "\n");
@@ -79,14 +61,13 @@ public class PlayerEvent implements YoloEventController {
      * @param canceled       If in this case w.r.t inventory items the move was canceled in observation
      */
     public void learnCancelEvent(byte[] inventoryItems, boolean canceled) {
-        if(canceled) decisionForest.learnSample(convertToIntArray(inventoryItems),_BLOCK,true);
         observeCount++;
         if (canceled)
             cancelCount++;
-//        cancelTrigger.update(inventoryItems, canceled);
-//        if (!Agent.UPLOAD_VERSION && DEBUG) {
-//            System.out.println("Cancel Event: " + canceled);
-//        }
+        cancelTrigger.update(inventoryItems, canceled);
+        if (!Agent.UPLOAD_VERSION && DEBUG) {
+            System.out.println("Cancel Event: " + canceled);
+        }
     }
 
     /**
@@ -112,6 +93,7 @@ public class PlayerEvent implements YoloEventController {
      */
     public void learnEventHappened(byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
         eventCount++;
+
         // TODO ist das kleinkunst oder kann das weg?
 //		if(move && !specialEvent.hasMovedOnce && !defaultEvent.hasMovedOnce){
 //			//Das erste mal, dass dieses Event als push-Event gesehen wird!
@@ -124,16 +106,30 @@ public class PlayerEvent implements YoloEventController {
 
         int maxIndex = 0;
         int maxLikelyValue = -1;
-        
+        int likelyLimit = 200;
+
         for (int i = 0; i < specialEvent.size(); i++) {
-            int likelyValue = specialEvent.get(i).likelyValue(newItype, move, scoreDelta, killed, spawnedItype, teleportTo, winGame, addInventory, removeInventory);
+            YoloEvent event = specialEvent.get(i);
+            int likelyValue = event.likelyValue(newItype, move, scoreDelta, killed, spawnedItype, teleportTo, winGame, addInventory, removeInventory);
             if (likelyValue > maxLikelyValue) {
                 maxLikelyValue = likelyValue;
                 maxIndex = i;
             }
         }
-        specialEvent.get(maxIndex).update(newItype, move, scoreDelta, killed, spawnedItype, teleportTo, winGame, addInventory, removeInventory);
-        decisionForest.learnSample(convertToIntArray(inventoryItems),maxIndex+1,true);
+
+        if (maxLikelyValue > likelyLimit) {
+            specialEventTrigger.get(maxIndex).update(inventoryItems, true);
+            specialEvent.get(maxIndex).update(newItype, move, scoreDelta, killed, spawnedItype, teleportTo, winGame, addInventory, removeInventory);
+        } else {
+            TriggerConditionWithInventory trigger = new TriggerConditionWithInventory();
+            trigger.update(inventoryItems, true);
+            YoloEvent event = new YoloEvent();
+            event.update(newItype, move, scoreDelta, killed, spawnedItype, teleportTo, winGame, addInventory, removeInventory);
+
+            // this has to be synchronized!!
+            specialEventTrigger.add(trigger);
+            specialEvent.add(event);
+        }
     }
 
     /**
@@ -178,8 +174,14 @@ public class PlayerEvent implements YoloEventController {
      * @return boolean if a this move is blocking
      */
     public boolean willCancel(byte[] inventoryItems) {
-        int res = decisionForest.predict(convertToIntArray(inventoryItems),10);
-        return res == 0;
+        if (observeCount == 0)
+            return false;
+        else {
+            if (cancelCount == observeCount)
+                return true;
+            else
+                return cancelTrigger.willTrigger(inventoryItems);
+        }
     }
 
     /**
@@ -190,36 +192,30 @@ public class PlayerEvent implements YoloEventController {
      * @return YoloEvent, either special or default event
      */
     public YoloEvent getEvent(byte[] inventoryItems) {
-        int res = decisionForest.predict(convertToIntArray(inventoryItems),10);
-        if(res==0) return specialEvent.get(0);
-        else return specialEvent.get(res-1);
-//        YoloEvent event = new YoloEvent();
-//        double maxProbability = -1;
-//        for (int i=0; i<specialEvent.size(); i++) {
-//            TriggerConditionWithInventory trigger = specialEventTrigger.get(i);
-//            double probability = trigger.getTriggerPropability(inventoryItems);
-//            if (trigger.willTrigger(inventoryItems) &&  probability > maxProbability) {
-//                maxProbability = probability;
-//                event = specialEvent.get(i);
-//            }
-//        }
-//        System.out.println("Probably event: " + event.toString() + " with an probability of " + maxProbability);
-//        return event;
+        YoloEvent event = new YoloEvent();
+        double maxProbability = -1;
+
+        for (int i=0; i<specialEvent.size(); i++) {
+            TriggerConditionWithInventory trigger = specialEventTrigger.get(i);
+            double probability = trigger.getTriggerPropability(inventoryItems);
+            if (trigger.willTrigger(inventoryItems) &&  probability > maxProbability) {
+                maxProbability = probability;
+                event = specialEvent.get(i);
+            }
+        }
+
+        System.out.println("Probably event: " + event.toString() + " with an probability of " + maxProbability);
+
+        return event;
     }
 
-    // Following are 2 RAW getters
+    // Following are 4 RAW getters
     public short getObserveCount() {
         return observeCount;
     }
 
     public short getCancelCount() {
         return cancelCount;
-    }
-
-    private int[] convertToIntArray(byte[] a){
-        int[] res = new int[a.length];
-        for(int i=0;i<a.length;i++) res[i] = a[i];
-        return res;
     }
 
 }
