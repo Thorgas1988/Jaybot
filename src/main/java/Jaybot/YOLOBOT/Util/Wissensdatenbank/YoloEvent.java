@@ -10,19 +10,21 @@ public class YoloEvent {
 	private boolean defeat = false;
 	private boolean blocked = false;
 
-	private byte newIType = UNDEFINED;
-	private byte scoreDelta = NO_SCORE_CHANGE;
-	private byte spawnedIType = UNDEFINED;
-	private byte teleportTo = UNDEFINED;
-	private byte addInventory = UNDEFINED;
-	private byte removeInventory = UNDEFINED;
+	private int newIType = UNDEFINED;
+	private int oldIType = UNDEFINED;
+	private double scoreDelta = NO_SCORE_CHANGE;
+	private int spawnedIType = UNDEFINED;
+	private int teleportTo = UNDEFINED;
+	private int addInventorySlot = UNDEFINED;
+	private int removeInventorySlot = UNDEFINED;
 
 
 	public YoloEvent() {
 	}
 
-	public YoloEvent(boolean blocked, boolean defeat, boolean victory, byte newItype, byte scoreDelta, byte spawnedItype, byte teleportTo, byte addInventory,
-					 byte removeInventory) {
+	public YoloEvent(boolean blocked, boolean defeat, boolean victory, int oldIType, int newItype, double scoreDelta,
+					 int spawnedItype, int teleportTo, int addInventory, int removeInventory) {
+		setOldIType(oldIType);
 		setNewIType(newItype);
 		setScoreDelta(scoreDelta);
 		setSpawns(spawnedItype);
@@ -53,10 +55,10 @@ public class YoloEvent {
 				sb.append(", ").append("spawnedIType: ").append(spawnedIType);
 			if (teleportTo != -1)
 				sb.append(", ").append("teleports to: ").append(teleportTo);
-			if (addInventory != -1)
-				sb.append(", ").append("adds inventory: ").append(addInventory);
-			if (removeInventory != -1)
-				sb.append(", ").append("remove inventory: ").append(removeInventory);
+			if (addInventorySlot != -1)
+				sb.append(", ").append("adds inventory: ").append(addInventorySlot);
+			if (removeInventorySlot != -1)
+				sb.append(", ").append("remove inventory: ").append(removeInventorySlot);
 		}
 
         return sb.toString();
@@ -82,8 +84,8 @@ public class YoloEvent {
 		if (scoreDelta != yoloEvent.scoreDelta) return false;
 		if (spawnedIType != yoloEvent.spawnedIType) return false;
 		if (teleportTo != yoloEvent.teleportTo) return false;
-		if (addInventory != yoloEvent.addInventory) return false;
-		return removeInventory == yoloEvent.removeInventory;
+		if (addInventorySlot != yoloEvent.addInventorySlot) return false;
+		return removeInventorySlot == yoloEvent.removeInventorySlot;
 
 	}
 
@@ -109,28 +111,31 @@ public class YoloEvent {
 		result = 31 * result + (int) scoreDelta;
 		result = 31 * result + (int) spawnedIType;
 		result = 31 * result + (int) teleportTo;
-		result = 31 * result + (int) addInventory;
-		result = 31 * result + (int) removeInventory;
+		result = 31 * result + (int) addInventorySlot;
+		result = 31 * result + (int) removeInventorySlot;
 		return result;
 	}
 
-	public void setNewIType(byte iType) {
+	public void setOldIType(int iType) {
+		this.oldIType = iType;
+	}
+	public void setNewIType(int iType) {
 		this.newIType = iType;
 	}
-	public void setScoreDelta(byte scoreDelta){
+	public void setScoreDelta(double scoreDelta){
 		this.scoreDelta = scoreDelta;
 	}
-	public void setSpawns(byte spawns){
+	public void setSpawns(int spawns){
 		this.spawnedIType = spawns;
 	}
-	public void setTeleportTo(byte teleportTo){
+	public void setTeleportTo(int teleportTo){
 		this.teleportTo = teleportTo;
 	}
-	public void setAddInventorySlotItem(byte addInventorySlotItem){
-		this.addInventory = addInventorySlotItem;
+	public void setAddInventorySlotItem(int addInventorySlotItem){
+		this.addInventorySlot = addInventorySlotItem;
 	}
-	public void setRemoveInventorySlotItem(byte removeInventorySlotItem){
-		this.removeInventory = removeInventorySlotItem;
+	public void setRemoveInventorySlotItem(int removeInventorySlotItem){
+		this.removeInventorySlot = removeInventorySlotItem;
 	}
 	public void setDefeat(boolean defeat){
 		this.defeat = defeat;
@@ -144,23 +149,26 @@ public class YoloEvent {
 
 
 
-	public byte getNewIType(){
+	public int getOldIType(){
+		return oldIType;
+	}
+	public int getNewIType(){
 		return newIType;
 	}
-	public byte getScoreDelta(){
+	public double getScoreDelta(){
 		return scoreDelta;
 	}
-	public byte getSpawnIType(){
+	public int getSpawnIType(){
 		return spawnedIType;
 	}
-	public byte getTeleportTo(){
+	public int getTeleportTo(){
 		return teleportTo;
 	}
-	public byte getAddInventorySlotItem(){
-		return addInventory;
+	public int getAddInventorySlotItem(){
+		return addInventorySlot;
 	}
-	public byte getRemoveInventorySlotItem(){
-		return removeInventory;
+	public int getRemoveInventorySlotItem(){
+		return removeInventorySlot;
 	}
 	public boolean isDefeat(){
 		return defeat;

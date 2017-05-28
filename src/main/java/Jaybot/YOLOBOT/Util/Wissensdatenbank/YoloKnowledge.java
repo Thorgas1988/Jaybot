@@ -2,15 +2,13 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
+import Jaybot.YOLOBOT.Util.Wissensdatenbank.Helper.YoloEventHelper;
 import Jaybot.YOLOBOT.YoloState;
-import core.game.*;
+import core.game.Observation;
 import ontology.Types;
 import tools.Vector2d;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Created by Torsten on 27.05.17.
@@ -35,7 +33,7 @@ public class YoloKnowledge {
     private boolean[] isContinuousMovingEnemy;
     private boolean[] isStochasticEnemy;
 
-    private RandomForest randomForestClassifier,
+    private RandomForest randomForestClassifier;
 
 
     private YoloKnowledge() {
@@ -84,8 +82,19 @@ public class YoloKnowledge {
         byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
 
         YoloEvent event2Learn = new YoloEvent();
-        if (currentState.getAvatar() == null || currentState.isGameOver()) {
+
+        // player has lost
+        if ( currentState.getAvatar() == null ||
+                (currentState.isGameOver() &&
+                currentState.getStateObservation().getGameWinner() != Types.WINNER.PLAYER_WINS) ) {
             event2Learn.setDefeat(true);
+            randomForestClassifier.train(inventory, event2Learn);
+            return;
+        }
+        // player has won
+        else if (currentState.isGameOver() &&
+                   currentState.getStateObservation().getGameWinner() == Types.WINNER.PLAYER_WINS) {
+            event2Learn.setVictory(true);
             randomForestClassifier.train(inventory, event2Learn);
             return;
         }
@@ -95,6 +104,45 @@ public class YoloKnowledge {
                 System.out.println("Did not find State or Avatar");
             return;
         }
+
+        Observation currentAvatar = currentState.getAvatar();
+        Observation previousAvatar = previousState.getAvatar();
+
+        // Action was a movement action, but position did not change and orientation dit not change as well
+        // --> blocked
+        if ( (actionDone == Types.ACTIONS.ACTION_UP || actionDone == Types.ACTIONS.ACTION_DOWN ||
+                actionDone == Types.ACTIONS.ACTION_LEFT || actionDone == Types.ACTIONS.ACTION_RIGHT) &&
+                (currentAvatar.position.equals(previousAvatar.position)) &&
+                ( !currentState.getAvatarOrientation().equals(previousState.getAvatarOrientation()) ) ) {
+            event2Learn.setBlocked(true);
+            randomForestClassifier.train(inventory, event2Learn);
+            return;
+        }
+
+        // everything from here is a move action
+        // i.e. the other features like spawner, score delta, etc. are interesting
+
+        // set the score delta
+        event2Learn.setScoreDelta(currentState.getGameScore() - previousState.getGameScore();
+
+        // set old and new iTypes
+        YoloEventHelper.setITypeChange(event2Learn, currentState, previousState);
+
+        // set inventory change (add/remove)
+        YoloEventHelper.setInventoryChange(event2Learn, currentState, previousState);
+
+        
+        TreeSet<core.game.Event> collisionHistory = currentState.getEventsHistory();
+
+
+
+        event2Learn.setTeleportTo();
+        event2Learn.setSpawns();
+
+
+        randomForestClassifier.train(inventory, event2Learn);
+        return;
+
 
         learnNpcMovement(currentState, lastState);
         learnAlivePosition(currentState);
@@ -107,7 +155,6 @@ public class YoloKnowledge {
 
 
         int lastAgentItype = lastState.getAvatar().itype;
-        byte[] inventory = getInventoryArray(lastState.getAvatarResources(), lastState.getHP());
         int lastGameTick = lastState.getGameTick();
         TreeSet<core.game.Event> history = currentState.getEventsHistory();
         while (history.size() > 0) {
