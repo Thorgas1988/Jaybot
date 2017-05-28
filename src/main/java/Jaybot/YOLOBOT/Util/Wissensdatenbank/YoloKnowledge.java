@@ -21,7 +21,15 @@ public class YoloKnowledge {
 	public static final int AXIS_Y = 1;
 	public static final int AXIS_VALUE_NOT_CHANGE_INDEX = 2;
 	public static final int  FULL_INT_MASK = 0b1111_1111__1111_1111__1111_1111__1111_1111;
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
+
+	private static final short IS_CONTINUOUS_MASK = 0x0F;
+	private static final short TESTED_COUNTER_MASK = 0xF0;
+
+	private static final byte CONTINUOUS_TEST_PASSED_NOT_CONTINUOUS = 1;
+	private static final byte CONTINUOUS_TEST_PASSED_CONTINUOUS = 2;
+	private static final double ENEMY_NEARBY_THRESHOLD = 1.0;
+	private static final int THRESHOLD_FOR_CONTINUOUS_CHECKING = 3;
 
 	public static final Vector2d ORIENTATION_NULL = new Vector2d(0, 0);
 	public static final Vector2d ORIENTATION_UP = new Vector2d(0, -1);
@@ -66,14 +74,14 @@ public class YoloKnowledge {
 	private byte[][] maxMovePerNPC_PerAxis; // See learnNpcMovement()
 	private byte[] npcMoveModuloTicks; // See learnNpcMovement()
 	private boolean haveEverGotScoreWithoutWinning;
-	private boolean[] isContinuousMovingEnemy;
-	
+	private short[] isContinuousMovingEnemy;
+	public boolean continuousKillerMap[][];
+
 	private int fromAvatarMask;
-	
+
 	private YoloState initialState;
 
 	public boolean learnDeactivated;
-
 	/**
 	 * Die Events der Objekte, die schon da waren (sich nicht bewegt haben um
 	 * die kollision aufzurufen)
@@ -95,7 +103,7 @@ public class YoloKnowledge {
 	 * 1er Bit bedeutet: Hier kann sicher gepushed werden!
 	 */
 	private int[] pushingMaskTheorie;
-	private final int MAX_X, MAX_Y;
+	public final int MAX_X, MAX_Y;
 	/**
 	 * Bestimmt, ob ein push von einen Objekt (gelernt werden kann, dass) mehr als zwei Objekte gepushed werden koennen.<br>
 	 * Achtung: Erhoeht Lernaufwand (enorm)
@@ -117,7 +125,6 @@ public class YoloKnowledge {
 		ressourceIndexMap = new byte[RESSOURCE_MAX];
 		itypeIndexMap = new byte[ITYPE_MAX_COUNT];
 		extraPlayerItypeIndexMap = new int[ITYPE_MAX_COUNT];
-		isContinuousMovingEnemy = new boolean[ITYPE_MAX_COUNT];
 
 		ressourceIndexReverseMap = new int[INDEX_MAX];
 		itypeIndexReverseMap = new int[INDEX_MAX];
@@ -140,6 +147,7 @@ public class YoloKnowledge {
 		useEffektToSpawnIndex = new byte[INDEX_MAX];
 		agentMoveControlCounter = new byte[INDEX_MAX];
 		agentItypeCounter = new byte[INDEX_MAX];
+		isContinuousMovingEnemy = new short[INDEX_MAX];
 
 		firstFreeRessourceIndex = 1; // 0 = HP
 		firstFreeItypeIndex = 0;
@@ -187,9 +195,10 @@ public class YoloKnowledge {
 		isStochasticEnemy = new boolean[INDEX_MAX];
 
 		learnStochasticEffekts(initialState);
+
+		continuousKillerMap = new boolean[MAX_X][MAX_Y];
 	}
 
-	double sqrt2 = Math.sqrt(2.0);
 	public void learnContinuousMovingEnemies(YoloState state)
 	{
 		ArrayList<Observation>[] npcPositions = state.getNpcPositions();
@@ -203,7 +212,7 @@ public class YoloKnowledge {
 					Observation firstOfType = npcPositions[npcNr].get(0);
 					int itypeIndex = itypeToIndex(firstOfType.itype);
 
-					if (!isContinuousMovingEnemy(itypeIndex))
+					if (!continuousCheckDone(itypeIndex))
 					{
 						Vector2d currentPos = firstOfType.position;
 						Vector2d positions[] = {currentPos, null, null};
@@ -235,8 +244,36 @@ public class YoloKnowledge {
 
 						if (zeroToFirstDistance == firstToSecondDistance && zeroToFirstDistance < state.getBlockSize())
 						{
-							isContinuousMovingEnemy[itypeIndex] = true;
-							System.out.println("NPC moves continuously, maybe :-P");
+							if (DEBUG)
+								System.out.println("NPC moves continuously, maybe :-P");
+							isContinuousMovingEnemy[itypeIndex] = CONTINUOUS_TEST_PASSED_CONTINUOUS;
+						}
+						else
+						{
+							//only 3 tests for every itype
+							byte counter = (byte)((isContinuousMovingEnemy[itypeIndex] & TESTED_COUNTER_MASK) >> 4);
+
+							if (counter == THRESHOLD_FOR_CONTINUOUS_CHECKING - 1/*cause of zero*/)
+							{
+								//trys 0,1,2 failed so not moving continuously
+								isContinuousMovingEnemy[itypeIndex] = CONTINUOUS_TEST_PASSED_NOT_CONTINUOUS;
+
+								if (DEBUG)
+									System.out.println("NPC does not move continuously, maybe :-P");
+							}
+							else
+							{
+								counter++;
+
+								//delete counter first
+								isContinuousMovingEnemy[itypeIndex] &= IS_CONTINUOUS_MASK;
+
+								//set new counter
+								isContinuousMovingEnemy[itypeIndex] |= (((short)counter) << 4);
+
+								if (DEBUG)
+									System.out.println("New test necessary:"+counter);
+							}
 						}
 					}
 				}
@@ -244,12 +281,13 @@ public class YoloKnowledge {
 		}
 	}
 
-
-
-
-
 	public boolean isContinuousMovingEnemy(int index) {
-		return isContinuousMovingEnemy[index];
+		return (isContinuousMovingEnemy[index] & IS_CONTINUOUS_MASK) == CONTINUOUS_TEST_PASSED_CONTINUOUS;
+	}
+
+	public boolean continuousCheckDone(int index) {
+		return isContinuousMovingEnemy(index) ||
+				((isContinuousMovingEnemy[index] & IS_CONTINUOUS_MASK) == CONTINUOUS_TEST_PASSED_NOT_CONTINUOUS);
 	}
 
 	// Setter: isStochasticEnemy[]
@@ -669,6 +707,16 @@ public class YoloKnowledge {
 					nearObservations.addAll(grid[spawnX][spawnY-1]);
 				if(positionAufSpielfeld(spawnX, spawnY+1))
 					nearObservations.addAll(grid[spawnX][spawnY+1]);
+
+				for (Iterator<Observation> iter = nearObservations.iterator(); iter.hasNext(); )
+				{
+					Observation nearObs = iter.next();
+
+					if (nearObs.category == Types.TYPE_RESOURCE)
+					{
+						iter.remove();
+					}
+				}
 
 				SimpleState simpleNow = currentState.getSimpleState();
 				boolean nothingGone = true;
@@ -1395,6 +1443,13 @@ public class YoloKnowledge {
 		//Check enemy:
 		if(!ignoreStochasticEnemyKilling && killIsCancel && canBeKilledByStochasticEnemyAt(currentState, x, y))
 			return true;
+
+		//TODO: currently turned off because of calculation of killer map
+		//if (canBeKilledByEnemyNearby(currentState, x, y) != null)
+		//	return true;
+
+		calculateContinuousKillerMap(currentState, x, y);
+
 		int mask = currentState.getSimpleState().getMask(x, y);
 
 		boolean surelyWillNotBlock = (blockingMaskTheorie[avatarIndex] & mask) == 0;
@@ -1412,8 +1467,48 @@ public class YoloKnowledge {
 				YoloEvent spawnedEvent = spawnedPEvent.getEvent(currentState.getInventoryArray());
 				boolean isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
 				if(isBadSpawner){
+					//TODO: Bad Spawner Detection is crappy
+					/*
+					continuousKillerMap[x][y] = 1;
+
+					//don't move in hole or between two evil spawner
+					if (!positionAufSpielfeld(x+2, y) || continuousKillerMap[x+2][y] == 1)
+					{
+						if (positionAufSpielfeld(x+1, y))
+						{
+							continuousKillerMap[x+1][y] = 1;
+						}
+					}
+					if (!positionAufSpielfeld(x-2, y) || continuousKillerMap[x-2][y] == 1)
+					{
+						if (positionAufSpielfeld(x-1, y))
+						{
+							continuousKillerMap[x-1][y] = 1;
+						}
+					}
+					if (!positionAufSpielfeld(x, y+2) || continuousKillerMap[x][y+2] == 1)
+					{
+						if (positionAufSpielfeld(x, y+1))
+						{
+							continuousKillerMap[x][y+1] = 1;
+						}
+					}
+					if (!positionAufSpielfeld(x, y-2) || continuousKillerMap[x][y-2] == 1)
+					{
+						if (positionAufSpielfeld(x, y-1))
+						{
+							continuousKillerMap[x][y-1] = 1;
+						}
+					}*/
+
 					return true;
 				}
+			}
+
+			if (continuousKillerMap[x][y])
+			{
+				//maybe some jerk kills the avatar
+				return true;
 			}
 
 
@@ -1678,6 +1773,175 @@ public class YoloKnowledge {
 			}
 		}
 
+		return null;
+	}
+
+	public void calculateContinuousKillerMap(YoloState currentState, int x, int y)
+	{
+		//reset old values
+		for (int i = 0; i < MAX_X; i++) {
+			for (int j = 0; j < MAX_Y; j++) {
+				//TODO: RESET MAP or make local
+				//continuousKillerMap[i][j] = false;
+			}
+		}
+
+		ArrayList<Observation>[][] grid = currentState.getObservationGrid();
+		if(positionAufSpielfeld(x, y)) {
+			ArrayList<Observation> observations = grid[x][y];
+			for (Observation observation : observations) {
+				int obsIndex = itypeToIndex(observation.itype);
+				if (isContinuousMovingEnemy(obsIndex))
+				{
+					int halfBlock = currentState.getBlockSize()/2;
+					double midX = observation.position.x + halfBlock;
+					double midY = observation.position.y + halfBlock;
+
+					double midInBlocksX = (int)(midX / currentState.getBlockSize());
+					double midInBlocksY = (int)(midY / currentState.getBlockSize());
+
+					int gridX = (int)midInBlocksX;
+					int gridY = (int)midInBlocksY;
+
+					//###
+					//#0#
+					//###
+					continuousKillerMap[x][y] = true;
+					if (midX - (gridX * currentState.getBlockSize()) < halfBlock)
+					{
+						if (midY - (gridY * currentState.getBlockSize()) < halfBlock)
+						{
+							if (positionAufSpielfeld(x-1, y-1))
+							{
+								//0##
+								//###
+								//###
+								continuousKillerMap[x-1][y-1] = true;
+							}
+							if (positionAufSpielfeld(x, y-1))
+							{
+								//#0#
+								//###
+								//###
+								continuousKillerMap[x][y-1] = true;
+							}
+						}
+						else
+						{
+							if (positionAufSpielfeld(x-1, y+1))
+							{
+								//###
+								//###
+								//0##
+								continuousKillerMap[x-1][y+1] = true;
+							}
+							if (positionAufSpielfeld(x, y+1))
+							{
+								//###
+								//###
+								//#0#
+								continuousKillerMap[x][y+1] = true;
+							}
+						}
+
+						if (positionAufSpielfeld(x-1, y))
+						{
+							//###
+							//0##
+							//###
+							continuousKillerMap[x-1][y] = true;
+						}
+					}
+					else
+					{
+						if (midY - (gridY * currentState.getBlockSize()) < halfBlock)
+						{
+							if (positionAufSpielfeld(x+1, y-1))
+							{
+								//##0
+								//###
+								//###
+								continuousKillerMap[x+1][y-1] = true;
+							}
+							if (positionAufSpielfeld(x, y-1))
+							{
+								//#0#
+								//###
+								//###
+								continuousKillerMap[x][y-1] = true;
+							}
+						}
+						else
+						{
+							if (positionAufSpielfeld(x+1, y+1))
+							{
+								//###
+								//###
+								//##0
+								continuousKillerMap[x+1][y+1] = true;
+							}
+							if (positionAufSpielfeld(x, y+1))
+							{
+								//###
+								//###
+								//#0#
+								continuousKillerMap[x][y+1] = true;
+							}
+						}
+
+						if (positionAufSpielfeld(x+1, y))
+						{
+							//###
+							//##0
+							//###
+							continuousKillerMap[x+1][y] = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public Observation canBeKilledByEnemyNearby(YoloState currentState, int x, int y)
+	{
+		ArrayList<Observation>[][] grid = currentState.getObservationGrid();
+		if(positionAufSpielfeld(x, y)) {
+			ArrayList<Observation> observations = grid[x][y];
+			for (Observation observation : observations) {
+				int obsIndex = itypeToIndex(observation.itype);
+				if (isContinuousMovingEnemy(obsIndex))
+				{
+					//stochastic enemy at testing field, but how near is he to avatar?
+					int halfBlock = currentState.getBlockSize()/2;
+
+					Vector2d enemyPosition = observation.position;
+
+                    double enemyX = enemyPosition.x + halfBlock;
+                    double enemyY = enemyPosition.y + halfBlock;
+
+                    double avatarX = x * currentState.getBlockSize() + halfBlock;
+					double avatarY = y * currentState.getBlockSize() + halfBlock;
+
+					double diffX = enemyX - avatarX;
+					double diffY = enemyY - avatarY;
+
+					double len = Math.abs(Math.sqrt((diffX*diffX)+(diffY*diffY)));
+
+                    //double diff = avatarPosition.copy().dist(enemyPosition);
+                    double diffBlocks = len / currentState.getBlockSize();
+
+					if (diffBlocks < ENEMY_NEARBY_THRESHOLD)
+					{
+						if (DEBUG)
+						{
+							System.out.println("Enemy nearby. Diff:"+diffBlocks+", enemyPos x|y:"+enemyPosition.x+"|"+enemyPosition.y+", avatarPos x|y"+avatarX+"|"+avatarY);
+						}
+						//enemy is nearby, could kill avatar!!
+						return observation;
+					}
+				}
+			}
+		}
 		return null;
 	}
 

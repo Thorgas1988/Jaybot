@@ -1,6 +1,5 @@
 package Jaybot.YOLOBOT;
 
-import core.game.Observation;
 import core.game.StateObservation;
 import core.player.AbstractPlayer;
 import Jaybot.YOLOBOT.SubAgents.BreitenSucheAgent;
@@ -13,10 +12,8 @@ import Jaybot.YOLOBOT.Util.Heuristics.HeuristicList;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import ontology.Types.ACTIONS;
 import tools.ElapsedCpuTimer;
-import tools.Vector2d;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,7 +21,7 @@ public class Agent extends AbstractPlayer {
 
 	public final static boolean UPLOAD_VERSION = true;
 	public final static boolean DRAW_TARGET_ONLY = false;
-	public final static boolean FORCE_PAINT = false;
+	public final static boolean FORCE_PAINT = true;
 	public final static boolean VIEW_ADVANCES = false;
 	public static final double PAINT_SCALE = 1;
 
@@ -151,6 +148,9 @@ public class Agent extends AbstractPlayer {
 			System.out.println(dynamics);
 
 		}
+		//TODO: Norman: Delete if you want, i use this for monitor the traffic on my pc
+		System.out.println("Advances:"+YoloState.advanceCounter);
+
 		YoloState.advanceCounter = 0;
 
 		return chosenAction;
@@ -207,16 +207,17 @@ public class Agent extends AbstractPlayer {
 		return newAgent;
 	}
 
+	//TODO: The method is totally ruined by Norman
 	@Override
 	public void draw(Graphics2D g) {
-		if(Agent.UPLOAD_VERSION && !FORCE_PAINT)
+		if (Agent.UPLOAD_VERSION && !FORCE_PAINT)
 			return;
 		try {
-			if(currentSubAgent != null){
-				currentSubAgent.draw(g);
+			if (currentSubAgent != null) {
+				//currentSubAgent.draw(g);
 			}
 
-			if(currentYoloState == null)
+			if (currentYoloState == null)
 				return;
 
 			//Draw KillByStochastic:
@@ -227,41 +228,110 @@ public class Agent extends AbstractPlayer {
 			for (int j = 0; j < currentYoloState.getObservationGrid().length; ++j) {
 				for (int i = 0; i < currentYoloState.getObservationGrid().length; ++i) {
 
+/*
+					for (Observation obs : currentYoloState.getObservationGrid()[i][j]) {
+						int index = YoloKnowledge.instance.itypeToIndex(obs.itype);
+
+						//Bad-SpawnerCheck:
+						if (YoloKnowledge.instance.isSpawner(obs.itype)) {
+							int iTypeIndexOfSpawner = YoloKnowledge.instance.getSpawnIndexOfSpawner(obs.itype);
+							PlayerEvent spawnedPEvent = YoloKnowledge.instance.getPlayerEvent(currentYoloState.getAvatar().itype,
+									YoloKnowledge.instance.indexToItype(iTypeIndexOfSpawner), true);
+							YoloEvent spawnedEvent = spawnedPEvent.getEvent(currentYoloState.getInventoryArray());
+							boolean isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
+							if (isBadSpawner) {
+								g.drawRect(i * block_size, j * block_size, block_size, block_size);
+							}
+						}
+					}
 					//Draw TOD:
 					String print = "";
-					if(!Agent.DRAW_TARGET_ONLY)
-						if(YoloKnowledge.instance.canBeKilledByStochasticEnemyAt(currentYoloState, i,j))
-							print = "TOD";
+					if (!Agent.DRAW_TARGET_ONLY) {
 
-					if(!Agent.DRAW_TARGET_ONLY)
-					g.drawString(print, i * block_size, j * block_size +
-						 half_block+12 );
+						print = "TOD";
+					}
+					if (YoloKnowledge.instance.canBeKilledByStochasticEnemyAt(currentYoloState, i, j)) {
+					}
+
+					if (!Agent.DRAW_TARGET_ONLY) {
+						g.drawString(print, i * block_size, j * block_size +
+								half_block + 12);
+					}
 
 					//Draw (stupid) raster:
-					if(!Agent.DRAW_TARGET_ONLY)
-					g.drawRect(i * block_size, j * block_size, block_size, block_size);
+					if (!Agent.DRAW_TARGET_ONLY) {
+						g.drawRect(i * block_size, j * block_size, block_size, block_size);
+					}*/
 				}
 			}
+/*
+			ArrayList<Observation> portals[] = currentYoloState.getPortalsPositions();
+			for (int k = 0; k < portals.length; k++) {
+				for (Observation temp : portals[k]) {
+					int[] posXY = YoloKnowledge.instance.vectorPosToGridPos(temp.position, block_size);
+
+					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+				}
+			}
+
+			ArrayList<Observation> movPos[] = currentYoloState.getMovablePositions();
+			for (int k = 0; k < movPos.length; k++) {
+				for (Observation temp : movPos[k]) {
+
+					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+				}
+			}
+
+			ArrayList<Observation> immPos[] = currentYoloState.getResourcesPositions();
+			for (int k = 0; k < immPos.length; k++) {
+				for (Observation temp : immPos[k]) {
+					if (temp.itype != 2)
+					{
+						g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+					}
+
+				}
+			}
+
 			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
 
-			for (int k = 0; k < observations.length; k++)
-			{
-				for (Observation temp : observations[k])
-				{
+			for (int k = 0; k < observations.length; k++) {
+				for (Observation temp : observations[k]) {
 					int obsIndex = YoloKnowledge.instance.itypeToIndex(temp.itype);
 
-					if (YoloKnowledge.instance.isContinuousMovingEnemy(obsIndex))
-					{
+					if (YoloKnowledge.instance.isContinuousMovingEnemy(obsIndex)) {
 						double diff = currentYoloState.getAvatar().position.dist(temp.position);
 
-						g.drawString(temp.position.toString(), (int)temp.position.x, (int)temp.position.y);
-						g.drawString(diff/half_block+"", (int)temp.position.x, (int)temp.position.y + 12);
-						g.drawLine((int)temp.position.x, (int)temp.position.y, (int)currentYoloState.getAvatar().position.x, (int)currentYoloState.getAvatar().position.y);
+						g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+						//g.drawString(temp.position.toString(), (int) temp.position.x, (int) temp.position.y+12);
+						g.drawString(diff / half_block + "", (int) temp.position.x, (int) temp.position.y + 12);
+						//g.drawLine((int) temp.position.x + half_block, (int) temp.position.y + half_block, (int) currentYoloState.getAvatar().position.x, (int) currentYoloState.getAvatar().position.y);
 					}
+
 				}
 			}
+*/
+			g.setColor(Color.MAGENTA);
+
+			boolean spawnMap[][] = YoloKnowledge.instance.continuousKillerMap;
+
+			for (int i = 0; i < YoloKnowledge.instance.MAX_X; i++) {
+				for (int j = 0; j < YoloKnowledge.instance.MAX_Y; j++) {
+					if (spawnMap[i][j])
+					{
+						g.drawRect(i*currentYoloState.getBlockSize(),
+								j*currentYoloState.getBlockSize(),
+								currentYoloState.getBlockSize(),
+								currentYoloState.getBlockSize());
+					}
+					//TODO: IMPORTANT, if you delete this go to Yoloknowledgebase -> calculateContinuousKillerMap and switch on deletion
+					spawnMap[i][j] = false;
+				}
+			}
+
+
 		} catch (Exception e) {
 		}
-	}
 
+	}
 }
