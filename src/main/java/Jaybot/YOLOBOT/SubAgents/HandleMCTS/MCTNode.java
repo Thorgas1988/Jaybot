@@ -361,13 +361,13 @@ public abstract class MCTNode {
         //Observation stochasticKiller = YoloKnowledge.instance.getPossibleStochasticKillerAt(curState, curState.getAvatarX(), curState.getAvatarY());
         //Observation stochasticKiller = YoloKnowledge.instance.getPossibleStochasticKillerInFront(curState);
         int stochasticKiller = YoloKnowledge.instance.getStochasticEnemyItype();
-        boolean shouldMove = stochasticKiller != -1 && !curState.getObservationsByItype(stochasticKiller).isEmpty();
+        boolean shouldMove = (stochasticKiller != -1) && !(curState.getObservationsByItype(stochasticKiller).isEmpty()) && !curState.isGameOver();
         //boolean shouldMove = stochasticKiller != null;
         //System.out.println("stochasticKiller:"+stochasticKiller);
-        //System.out.println("CanInterActWithUse: "+YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller));
+        //System.out.println("CanInteractWithUse: "+YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller));
         //TODO canInteractWithUse always false?
-        boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller) && observationIsInFrontOfAvatar(curState, stochasticKiller);
-
+        boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && (YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller)) && observationIsInFrontOfAvatar(curState, stochasticKiller);
+        System.out.println(shouldMove + " " + stochasticKiller);
         for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
             ACTIONS actions = iterator.next();
             if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
