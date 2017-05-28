@@ -1,19 +1,23 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
+import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
 import Jaybot.YOLOBOT.YoloState;
-import core.game.Observation;
+import core.game.*;
 import ontology.Types;
 import tools.Vector2d;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Created by Torsten on 27.05.17.
  */
 public class YoloKnowledge {
+    public static boolean DEACTIVATE_LEARNING = false;
+
     private static double SQRT_2 = Math.sqrt(2.0);
     private static int MAX_ITYPES = 32;
     private static int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
@@ -30,6 +34,8 @@ public class YoloKnowledge {
 
     private boolean[] isContinuousMovingEnemy;
     private boolean[] isStochasticEnemy;
+
+    private RandomForest randomForestClassifier,
 
 
     private YoloKnowledge() {
@@ -53,6 +59,7 @@ public class YoloKnowledge {
     public void clear() {
         isContinuousMovingEnemy = new boolean[MAX_ITYPES];
         isStochasticEnemy = new boolean[MAX_ITYPES];
+        randomForestClassifier = new RandomForest(MAX_ITYPES, 1000);
     }
 
 
@@ -64,7 +71,71 @@ public class YoloKnowledge {
      * @param actionDone    The action which was done to transition from the previous to the current state.
      */
     public void learnFrom(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
+        if(currentState == null || previousState == null || DEACTIVATE_LEARNING)
+            return;
 
+        if(currentState.getGameTick() != previousState.getGameTick()+1){
+            if(!Agent.UPLOAD_VERSION)
+                System.out.println("No sequential states given!");
+            return;
+        }
+
+        // get the inventory of the current state
+        byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
+
+        YoloEvent event2Learn = new YoloEvent();
+        if (currentState.getAvatar() == null || currentState.isGameOver()) {
+            event2Learn.setDefeat(true);
+            randomForestClassifier.train(inventory, event2Learn);
+            return;
+        }
+
+        if(previousState == null || previousState.getAvatar() == null){
+            if(!Agent.UPLOAD_VERSION)
+                System.out.println("Did not find State or Avatar");
+            return;
+        }
+
+        learnNpcMovement(currentState, lastState);
+        learnAlivePosition(currentState);
+        learnSpawner(currentState, lastState);
+        learnDynamicObjects(currentState, lastState);
+        learnAgentMovement(currentState, lastState, actionDone);
+
+        if(actionDone == Types.ACTIONS.ACTION_USE)
+            learnUseActionResult(currentState, lastState);
+
+
+        int lastAgentItype = lastState.getAvatar().itype;
+        byte[] inventory = getInventoryArray(lastState.getAvatarResources(), lastState.getHP());
+        int lastGameTick = lastState.getGameTick();
+        TreeSet<core.game.Event> history = currentState.getEventsHistory();
+        while (history.size() > 0) {
+            core.game.Event newEvent = history.pollLast();
+            if(newEvent.gameStep != lastGameTick){
+                break;
+            }
+
+            int passiveItype = newEvent.passiveTypeId;
+            byte passiveIndex = itypeToIndex(passiveItype);
+            int activeItype = newEvent.activeTypeId;
+            byte activeIndex = itypeToIndex(activeItype);
+
+            //Lerne PlayerIndex
+            if(!isPlayerIndex[activeIndex]){
+                //Dieser Index wurde bisher nicht mit Player in verbindung gebracht:
+                isPlayerIndex[activeIndex] = true;
+                playerIndexMask = playerIndexMask | 1 << activeIndex;
+                playerITypes.add(activeItype);
+            }
+
+            if(!newEvent.fromAvatar){
+                //Was the Avatar itself
+                learnAgentEvent(currentState, lastState, passiveIndex, newEvent.passiveSpriteId, actionDone);
+            }else{
+                learnEvent(currentState, lastState, newEvent);
+            }
+        }
     }
 
     /**
@@ -192,6 +263,5 @@ public class YoloKnowledge {
 
         if (!Agent.UPLOAD_VERSION)
             System.out.println("Stochastische NPCs: " + stochasticNpcCount);
-
     }
 }

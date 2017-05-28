@@ -1,6 +1,7 @@
 package Jaybot.YOLOBOT.Util.RandomForest;
 
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
+import Jaybot.YOLOBOT.YoloState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,8 +12,10 @@ import java.util.Map;
 public class RandomForest {
 
     private RandomTree[] forest;
+    private int treeSize;
 
     public RandomForest(int treeSize, int forestSize) {
+        this.treeSize = treeSize;
         forest = new RandomTree[forestSize];
 
         for (int treeIndex = 0; treeIndex < forestSize; treeIndex++) {
@@ -24,7 +27,7 @@ public class RandomForest {
         if (inventory == null || events == null || inventory.length != events.length)
             throw new IllegalArgumentException("The inventory and event arrays have to be the same length");
 
-        for (int i=0; i < inventory.length; i++){
+        for (int i = 0; i < inventory.length; i++) {
             train(inventory[i], events[i]);
         }
     }
@@ -74,6 +77,30 @@ public class RandomForest {
 
         sb.append("]}");
         return sb.toString();
+    }
+
+
+    /**
+     * Returns a forest compatible (i.e. with the count of the conditions) inventory.
+     * CAREFUL: Cuts off all inventoryItems with an index > the condition count.
+     *
+     * @param state The YoloState to retrieve the inventory from.
+     * @return The inventory as byte array. if a iType was not available in the inventory it is stored with an amount of zero.
+     */
+    public byte[] getInventoryArray(YoloState state) {
+        Map<Integer, Integer> inventory = state.getAvatarResources();
+        byte[] inventoryArray = new byte[treeSize];
+
+        for (int i = 0; i<inventoryArray.length; i++) {
+            Integer itemAmount = inventory.get(i);
+            if (itemAmount == null) {
+                inventoryArray[i] = 0;
+            } else {
+                inventoryArray[i] = itemAmount.byteValue();
+            }
+        }
+
+        return inventoryArray;
     }
 
     public RandomTree[] getTrees() {

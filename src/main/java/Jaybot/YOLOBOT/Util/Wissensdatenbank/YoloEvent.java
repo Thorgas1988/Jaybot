@@ -6,9 +6,9 @@ public class YoloEvent {
 	public static final byte UNDEFINED = -1;
 	public static final byte NO_SCORE_CHANGE = 0;
 
-	private boolean victory;
-	private boolean defeat;
-	private boolean blocked;
+	private boolean victory = false;
+	private boolean defeat = false;
+	private boolean blocked = false;
 
 	private byte newIType = UNDEFINED;
 	private byte scoreDelta = NO_SCORE_CHANGE;
