@@ -44,8 +44,8 @@ public class DistanceToNPCsHeuristic extends IModdableHeuristic {
 		}
 		int npcX = (int)(npc.position.x / ys.getBlockSize());
 		int npcY = (int)(npc.position.y / ys.getBlockSize());
-		
-		if(targetIsToUse && YoloKnowledge.instance.positionAufSpielfeld(npcX, npcY)){
+
+		if (targetToUse && YoloKnowledge.instance.positionAufSpielfeld(npcX, npcY)) {
 			for (Observation obs : ys.getObservationGrid()[npcX][npcY]) {
 				if(obs.category == Types.TYPE_FROMAVATAR)
 					return 0;

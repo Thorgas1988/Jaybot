@@ -204,7 +204,7 @@ public class PlayerEvent implements YoloEventController {
             }
         }
 
-        System.out.println("Probably event: " + event.toString() + " with an probability of " + maxProbability);
+        //System.out.println("Probably event: " + event.toString() + " with an probability of " + maxProbability);
 
         return event;
     }
