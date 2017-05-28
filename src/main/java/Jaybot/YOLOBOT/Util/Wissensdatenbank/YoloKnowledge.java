@@ -1,21 +1,24 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
+import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.YoloState;
 import core.game.Observation;
 import ontology.Types;
 import tools.Vector2d;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Torsten on 27.05.17.
  */
 public class YoloKnowledge {
-
-    private static final boolean DEBUG = false;
-
     private static double SQRT_2 = Math.sqrt(2.0);
     private static int MAX_ITYPES = 32;
+    private static int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
+    private static int STOCHASTIC_ITERATIONS_COUNT = 10;
+    private static int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
 
     private static YoloKnowledge instance = null;
 
@@ -26,6 +29,7 @@ public class YoloKnowledge {
     public static final Vector2d ORIENTATION_RIGHT = new Vector2d(1, 0);
 
     private boolean[] isContinuousMovingEnemy;
+    private boolean[] isStochasticEnemy;
 
 
     private YoloKnowledge() {
@@ -48,27 +52,33 @@ public class YoloKnowledge {
 
     public void clear() {
         isContinuousMovingEnemy = new boolean[MAX_ITYPES];
+        isStochasticEnemy = new boolean[MAX_ITYPES];
     }
 
 
     /**
      * Learns knowledge from the transition of the previous state to the current.
      *
-     * @param currentState The current game state.
+     * @param currentState  The current game state.
      * @param previousState The previous game state
-     * @param actionDone The action which was done to transition from the previous to the current state.
+     * @param actionDone    The action which was done to transition from the previous to the current state.
      */
     public void learnFrom(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
 
     }
 
-    public void learnContinuousMovingEnemies(YoloState state)
-    {
-        // Simulate 2 states
-        YoloState[] states = new YoloState[3];
+    /**
+     * Learns continuous moving enemies
+     *
+     * @param state The initial state of the game.
+     */
+    public void learnContinuousMovingEnemies(YoloState state) {
+        // Simulate CONTINUOUS_MOVIN_STATE_ADVANCES_COUNT many states (increment by 1 to store the source state)
+        YoloState[] states = new YoloState[CONTINUOUS_MOVING_STATE_ADVANCES_COUNT + 1];
         states[0] = state;
-        states[1] = states[0].copyAdvanceLearn(Types.ACTIONS.ACTION_NIL);
-        states[2] = states[1].copyAdvanceLearn(Types.ACTIONS.ACTION_NIL);
+        for (int i = 1; i < states.length) {
+            states[i] = states[i - 1].copyAdvanceLearn(Types.ACTIONS.ACTION_NIL);
+        }
 
         Vector2d[][] positions = new Vector2d[isContinuousMovingEnemy.length][states.length];
 
@@ -94,7 +104,7 @@ public class YoloKnowledge {
 
         // calculate distances between the states of the diffrent itypes
         // and check if it is a continuousMovingEnemy
-        for (int iType=0; iType<positions.length; iType++) {
+        for (int iType = 0; iType < positions.length; iType++) {
             if (positions[iType][0] != null && positions[iType][1] != null && positions[iType][2] != null) {
                 continue;
             }
@@ -102,11 +112,86 @@ public class YoloKnowledge {
             double zeroToFirstDistance = positions[iType][0].dist(positions[iType][1]);
             double firstToSecondDistance = positions[iType][1].dist(positions[iType][2]);
 
-            if (zeroToFirstDistance == firstToSecondDistance && zeroToFirstDistance < state.getBlockSize())
-            {
+            if (zeroToFirstDistance == firstToSecondDistance && zeroToFirstDistance < state.getBlockSize()) {
                 isContinuousMovingEnemy[iType] = true;
                 System.out.println("NPC moves continuously, maybe :-P");
             }
         }
+    }
+
+    /**
+     * Learns stochastic moving NPCs
+     *
+     * @param state The initial state of the game
+     */
+    public void learnStochasticEffekts(YoloState state) {
+        Map<Integer, Vector2d> positions = new HashMap<Integer, Vector2d>();
+        int stochasticNpcCount = 0;
+
+        if (state.getNpcPositions() == null || state.getNpcPositions().length == 0)
+            return;
+
+        // run STOCHASTIC_ITERATIONS_COUNT many iterations to find stochastic NPCs
+        for (int iteration = 0; iteration < STOCHASTIC_ITERATIONS_COUNT; iteration++) {
+            boolean haveStochasticEnemy = false;
+            state.setNewSeed((int) (Math.random() * 10000));
+            YoloState nextState = state.copyAdvanceLearn(Types.ACTIONS.ACTION_NIL);
+            ArrayList<Observation>[] nextStateNPCs = nextState.getNpcPositions();
+
+            // try at least STOCHASTIC_ITERATIONS_MIN_TRIES many state advances, maybe the first few were just bad luck
+            if (nextStateNPCs == null && iteration >= STOCHASTIC_ITERATIONS_MIN_TRIES) {
+                break;
+            }
+
+            for (int npcNr = 0; npcNr < nextStateNPCs.length; npcNr++) {
+
+                // do we even have something to do here?
+                if (nextStateNPCs[npcNr] == null || nextStateNPCs[npcNr].isEmpty()) {
+                    continue;
+                }
+
+
+                // Check if this NPC was not recognized as stochastic before
+                int iType = nextStateNPCs[npcNr].get(0).itype;
+                if (!isStochasticEnemy[iType]) {
+
+                    // was not recognized as stochastic before, then check the position.
+                    // if it is not stochastic all observation position of this iType should be the same position
+                    // over all iterations
+                    for (int i = 0; i < nextStateNPCs[npcNr].size(); i++) {
+                        Observation obs = nextStateNPCs[npcNr].get(i);
+                        Vector2d referencePos = positions.get(obs.obsID);
+
+                        // store the reference position if it was not stored before
+                        // most likely in the first iteration or if the iType was absent in the early iterations
+                        // because of other stochastic effects which killed the iType
+                        if (referencePos == null) {
+                            positions.put(obs.obsID, obs.position);
+                        } else {
+                            if (!referencePos.equals(obs.position)) {
+                                //NPC stochastic movement detected!
+                                isStochasticEnemy[iType] = true;
+                                stochasticNpcCount++;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                //Iteration fuer diesen Itype durchgelaufen
+                if (isStochasticEnemy[iType])
+                    haveStochasticEnemy = true;        //Merke, dass es einen stochastischen Gegner gab!
+            }
+
+            // did not find any stochastic enemies?
+            // try at least STOCHASTIC_ITERATIONS_MIN_TRIES many state advances, maybe the first few were just bad luck
+            if (!haveStochasticEnemy && iteration >= STOCHASTIC_ITERATIONS_MIN_TRIES) {
+                break;
+            }
+        }
+
+        if (!Agent.UPLOAD_VERSION)
+            System.out.println("Stochastische NPCs: " + stochasticNpcCount);
+
     }
 }
