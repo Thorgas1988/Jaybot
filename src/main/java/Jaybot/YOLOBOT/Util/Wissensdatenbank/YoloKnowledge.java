@@ -2,9 +2,11 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
+import Jaybot.YOLOBOT.Util.SimpleState;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.Helper.YoloEventHelper;
 import Jaybot.YOLOBOT.YoloState;
-import core.game.Observation;
+import core.game.*;
+import core.game.Event;
 import ontology.Types;
 import tools.Vector2d;
 
@@ -32,6 +34,12 @@ public class YoloKnowledge {
 
     private boolean[] isContinuousMovingEnemy;
     private boolean[] isStochasticEnemy;
+
+    private int playerITypeMask = 0;
+
+    private boolean hasScoreWithoutWinning = false;
+
+    private PlayerUseEvent[][] useEffects;
 
     private RandomForest randomForestClassifier;
 
@@ -61,6 +69,39 @@ public class YoloKnowledge {
     }
 
 
+    private void learnCollisionEvent(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
+        // get the inventory of the current state
+        byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
+        // create the YoloEvent 2 learn
+        YoloEvent event2Learn = YoloEvent.create(currentState, previousState, actionDone, inventory);
+        // train the random forest with the YoloEvent
+        randomForestClassifier.train(inventory, event2Learn);
+    }
+
+    private void learnUseEvent(YoloState currentState, YoloState lastState,
+                               Event collider) {
+
+        if(!Agent.UPLOAD_VERSION)
+            System.out.println("Learn Use Event: " + collider.activeSpriteId + " -> " + collider.passiveSpriteId);
+
+        int otherIType = collider.passiveTypeId;
+        int playerObjIType = collider.activeTypeId;
+        boolean wall = currentState.getSimpleState().getObservationWithIdentifier(collider.passiveSpriteId) != null;
+
+        if(useEffects[playerObjIType][otherIType] == null){
+            useEffects[playerObjIType][otherIType] = new PlayerUseEvent();
+        }
+
+        PlayerUseEvent uEvent = useEffects[playerObjIType][otherIType];
+        byte deltaScore = (byte) (currentState.getGameScore()-lastState.getGameScore());
+
+        if(!hasScoreWithoutWinning && deltaScore>0 && !currentState.isGameOver())
+            hasScoreWithoutWinning = true;
+
+        uEvent.learnTriggerEvent(deltaScore, wall);
+    }
+
+
     /**
      * Learns knowledge from the transition of the previous state to the current.
      *
@@ -69,6 +110,7 @@ public class YoloKnowledge {
      * @param actionDone    The action which was done to transition from the previous to the current state.
      */
     public void learnFrom(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
+
         if(currentState == null || previousState == null || DEACTIVATE_LEARNING)
             return;
 
@@ -78,109 +120,32 @@ public class YoloKnowledge {
             return;
         }
 
-        // get the inventory of the current state
-        byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
-
-        YoloEvent event2Learn = new YoloEvent();
-
-        // player has lost
-        if ( currentState.getAvatar() == null ||
-                (currentState.isGameOver() &&
-                currentState.getStateObservation().getGameWinner() != Types.WINNER.PLAYER_WINS) ) {
-            event2Learn.setDefeat(true);
-            randomForestClassifier.train(inventory, event2Learn);
-            return;
-        }
-        // player has won
-        else if (currentState.isGameOver() &&
-                   currentState.getStateObservation().getGameWinner() == Types.WINNER.PLAYER_WINS) {
-            event2Learn.setVictory(true);
-            randomForestClassifier.train(inventory, event2Learn);
-            return;
-        }
-
-        if(previousState == null || previousState.getAvatar() == null){
-            if(!Agent.UPLOAD_VERSION)
-                System.out.println("Did not find State or Avatar");
-            return;
-        }
-
-        Observation currentAvatar = currentState.getAvatar();
-        Observation previousAvatar = previousState.getAvatar();
-
-        // Action was a movement action, but position did not change and orientation dit not change as well
-        // --> blocked
-        if ( (actionDone == Types.ACTIONS.ACTION_UP || actionDone == Types.ACTIONS.ACTION_DOWN ||
-                actionDone == Types.ACTIONS.ACTION_LEFT || actionDone == Types.ACTIONS.ACTION_RIGHT) &&
-                (currentAvatar.position.equals(previousAvatar.position)) &&
-                ( !currentState.getAvatarOrientation().equals(previousState.getAvatarOrientation()) ) ) {
-            event2Learn.setBlocked(true);
-            randomForestClassifier.train(inventory, event2Learn);
-            return;
-        }
-
-        // everything from here is a move action
-        // i.e. the other features like spawner, score delta, etc. are interesting
-
-        // set the score delta
-        event2Learn.setScoreDelta(currentState.getGameScore() - previousState.getGameScore();
-
-        // set old and new iTypes
-        YoloEventHelper.setITypeChange(event2Learn, currentState, previousState);
-
-        // set inventory change (add/remove)
-        YoloEventHelper.setInventoryChange(event2Learn, currentState, previousState);
-
-        
-        TreeSet<core.game.Event> collisionHistory = currentState.getEventsHistory();
-
-
-
-        event2Learn.setTeleportTo();
-        event2Learn.setSpawns();
-
-
-        randomForestClassifier.train(inventory, event2Learn);
-        return;
-
-
-        learnNpcMovement(currentState, lastState);
-        learnAlivePosition(currentState);
-        learnSpawner(currentState, lastState);
-        learnDynamicObjects(currentState, lastState);
-        learnAgentMovement(currentState, lastState, actionDone);
-
-        if(actionDone == Types.ACTIONS.ACTION_USE)
-            learnUseActionResult(currentState, lastState);
-
-
-        int lastAgentItype = lastState.getAvatar().itype;
-        int lastGameTick = lastState.getGameTick();
         TreeSet<core.game.Event> history = currentState.getEventsHistory();
         while (history.size() > 0) {
-            core.game.Event newEvent = history.pollLast();
-            if(newEvent.gameStep != lastGameTick){
+            Event collider = history.pollLast();
+
+            if (collider.gameStep != previousState.getGameTick()) {
                 break;
             }
 
-            int passiveItype = newEvent.passiveTypeId;
-            byte passiveIndex = itypeToIndex(passiveItype);
-            int activeItype = newEvent.activeTypeId;
-            byte activeIndex = itypeToIndex(activeItype);
+            int passiveItype = collider.passiveTypeId;
+            int activeItype = collider.activeTypeId;
 
-            //Lerne PlayerIndex
-            if(!isPlayerIndex[activeIndex]){
-                //Dieser Index wurde bisher nicht mit Player in verbindung gebracht:
-                isPlayerIndex[activeIndex] = true;
-                playerIndexMask = playerIndexMask | 1 << activeIndex;
-                playerITypes.add(activeItype);
+            // if the active iType is no known player iType
+            if (!isPlayerIType(activeItype)) {
+                // add it as an player iType
+                playerITypeMask = playerITypeMask | 1 << activeItype;
             }
 
-            if(!newEvent.fromAvatar){
-                //Was the Avatar itself
-                learnAgentEvent(currentState, lastState, passiveIndex, newEvent.passiveSpriteId, actionDone);
-            }else{
-                learnEvent(currentState, lastState, newEvent);
+            // was the collision provoked by a sprite created from the player
+            if (!collider.fromAvatar) {
+                // learn the use event
+                learnUseEvent(currentState, previousState, collider);
+            }
+            // the player collided
+            else {
+                // learn the collision event
+                learnCollisionEvent(currentState, previousState, actionDone);
             }
         }
     }
@@ -310,5 +275,10 @@ public class YoloKnowledge {
 
         if (!Agent.UPLOAD_VERSION)
             System.out.println("Stochastische NPCs: " + stochasticNpcCount);
+    }
+
+    public boolean isPlayerIType(int iType) {
+        // return true if the bit at position iType is 1 in the playerITypeMask
+        return ((playerITypeMask & (1 << iType)) > 0);
     }
 }
