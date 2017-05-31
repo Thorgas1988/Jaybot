@@ -2,15 +2,16 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
-import Jaybot.YOLOBOT.Util.SimpleState;
-import Jaybot.YOLOBOT.Util.Wissensdatenbank.Helper.YoloEventHelper;
 import Jaybot.YOLOBOT.YoloState;
-import core.game.*;
 import core.game.Event;
+import core.game.Observation;
 import ontology.Types;
 import tools.Vector2d;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Created by Torsten on 27.05.17.
@@ -18,11 +19,11 @@ import java.util.*;
 public class YoloKnowledge {
     public static boolean DEACTIVATE_LEARNING = false;
 
-    private static double SQRT_2 = Math.sqrt(2.0);
-    private static int MAX_ITYPES = 32;
-    private static int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
-    private static int STOCHASTIC_ITERATIONS_COUNT = 10;
-    private static int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
+    private static final double SQRT_2 = Math.sqrt(2.0);
+    private static final  int MAX_INDICES = 32;
+    private static final  int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
+    private static final  int STOCHASTIC_ITERATIONS_COUNT = 10;
+    private static final  int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
 
     private static YoloKnowledge instance = null;
 
@@ -32,12 +33,19 @@ public class YoloKnowledge {
     public static final Vector2d ORIENTATION_LEFT = new Vector2d(-1, 0);
     public static final Vector2d ORIENTATION_RIGHT = new Vector2d(1, 0);
 
+    private byte currentITypeIndex;
+    private int[] iType2IndexMap;
+
     private boolean[] isContinuousMovingEnemy;
     private boolean[] isStochasticEnemy;
 
-    private int playerITypeMask = 0;
+    private int playerITypeMask;
 
-    private boolean hasScoreWithoutWinning = false;
+    private int dynamicMask;
+
+    private int[] iTypeCategories;
+
+    private boolean hasScoreWithoutWinning;
 
     private PlayerUseEvent[][] useEffects;
 
@@ -45,7 +53,7 @@ public class YoloKnowledge {
 
 
     private YoloKnowledge() {
-        clear();
+        reset();
     }
 
     public static YoloKnowledge getInstance() {
@@ -62,43 +70,49 @@ public class YoloKnowledge {
 
     }
 
-    public void clear() {
-        isContinuousMovingEnemy = new boolean[MAX_ITYPES];
-        isStochasticEnemy = new boolean[MAX_ITYPES];
-        randomForestClassifier = new RandomForest(MAX_ITYPES, 1000);
-    }
-
-
-    private void learnCollisionEvent(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
-        // get the inventory of the current state
-        byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
-        // create the YoloEvent 2 learn
-        YoloEvent event2Learn = YoloEvent.create(currentState, previousState, actionDone, inventory);
-        // train the random forest with the YoloEvent
-        randomForestClassifier.train(inventory, event2Learn);
-    }
-
-    private void learnUseEvent(YoloState currentState, YoloState lastState,
-                               Event collider) {
-
-        if(!Agent.UPLOAD_VERSION)
-            System.out.println("Learn Use Event: " + collider.activeSpriteId + " -> " + collider.passiveSpriteId);
-
-        int otherIType = collider.passiveTypeId;
-        int playerObjIType = collider.activeTypeId;
-        boolean wall = currentState.getSimpleState().getObservationWithIdentifier(collider.passiveSpriteId) != null;
-
-        if(useEffects[playerObjIType][otherIType] == null){
-            useEffects[playerObjIType][otherIType] = new PlayerUseEvent();
+    /**
+     * Resets the YoloKnowledge base.
+     */
+    public void reset() {
+        currentITypeIndex = 0;
+        iType2IndexMap = new int[Byte.MAX_VALUE];
+        for (int i=0; i<iType2IndexMap.length; i++) {
+            iType2IndexMap[i] = -1;
         }
 
-        PlayerUseEvent uEvent = useEffects[playerObjIType][otherIType];
-        byte deltaScore = (byte) (currentState.getGameScore()-lastState.getGameScore());
+        isContinuousMovingEnemy = new boolean[MAX_INDICES];
+        isStochasticEnemy = new boolean[MAX_INDICES];
+        playerITypeMask = 0;
+        dynamicMask = 0;
+        iTypeCategories = new int[MAX_INDICES];
+        hasScoreWithoutWinning = false;
+        useEffects = new PlayerUseEvent[MAX_INDICES][MAX_INDICES];
+        randomForestClassifier = new RandomForest(MAX_INDICES, 1000);
+    }
 
-        if(!hasScoreWithoutWinning && deltaScore>0 && !currentState.isGameOver())
-            hasScoreWithoutWinning = true;
+    private int iType2Index(int iType) {
+        if (iType2IndexMap[iType] == -1) {
+            iType2IndexMap[iType] = currentITypeIndex;
+            currentITypeIndex++;
+        }
+        return iType2IndexMap[iType];
+    }
 
-        uEvent.learnTriggerEvent(deltaScore, wall);
+    /**
+     * Returns if the iType belongs to the player
+     */
+    public boolean isPlayerIType(int iType) {
+        int index = iType2Index(iType);
+        // return true if the bit at position iType is 1 in the playerITypeMask
+        return ((playerITypeMask & (1 << index)) > 0);
+    }
+
+    /**
+     * Stores the given iType in the player mask. This allows to identify the iType as the player.
+     */
+    public void storePlayerIType(int iType) {
+        int index = iType2Index(iType);
+        playerITypeMask = playerITypeMask | (1 << index);
     }
 
 
@@ -134,7 +148,7 @@ public class YoloKnowledge {
             // if the active iType is no known player iType
             if (!isPlayerIType(activeItype)) {
                 // add it as an player iType
-                playerITypeMask = playerITypeMask | 1 << activeItype;
+                storePlayerIType(activeItype);
             }
 
             // was the collision provoked by a sprite created from the player
@@ -151,22 +165,87 @@ public class YoloKnowledge {
     }
 
     /**
-     * Learns continuous moving enemies
-     *
-     * @param state The initial state of the game.
+     * Learns collision events (YoloEvent)
      */
-    public void learnContinuousMovingEnemies(YoloState state) {
+    private void learnCollisionEvent(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
+        // get the inventory of the current state
+        byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
+        // create the YoloEvent 2 learn
+        YoloEvent event2Learn = YoloEvent.create(currentState, previousState, actionDone, inventory);
+        // train the random forest with the YoloEvent
+        randomForestClassifier.train(inventory, event2Learn);
+    }
+
+    /**
+     * Learns use events occured because of a collision from the player created projectile with another object.
+     */
+    private void learnUseEvent(YoloState currentState, YoloState lastState,
+                               Event collider) {
+
+        if(!Agent.UPLOAD_VERSION)
+            System.out.println("Learn Use Event: " + collider.activeSpriteId + " -> " + collider.passiveSpriteId);
+
+        int otherITypeIndex = iType2Index(collider.passiveTypeId);
+        int playerObjITypeIndex = iType2Index(collider.activeTypeId);
+        boolean wall = currentState.getSimpleState().getObservationWithIdentifier(collider.passiveSpriteId) != null;
+
+        if(useEffects[playerObjITypeIndex][otherITypeIndex] == null){
+            useEffects[playerObjITypeIndex][otherITypeIndex] = new PlayerUseEvent();
+        }
+
+        PlayerUseEvent uEvent = useEffects[playerObjITypeIndex][otherITypeIndex];
+        byte deltaScore = (byte) (currentState.getGameScore()-lastState.getGameScore());
+
+        if(!hasScoreWithoutWinning && deltaScore>0 && !currentState.isGameOver())
+            hasScoreWithoutWinning = true;
+
+        uEvent.learnTriggerEvent(deltaScore, wall);
+    }
+
+    /**
+     * Learns the categories of iTypes
+     */
+    public void learnObjectCategories(YoloState state) {
+        learnObjectCategories(state.getImmovablePositions());
+        learnObjectCategories(state.getFromAvatarSpritesPositions());
+        learnObjectCategories(state.getMovablePositions());
+        learnObjectCategories(state.getNpcPositions());
+        learnObjectCategories(state.getPortalsPositions());
+        learnObjectCategories(state.getResourcesPositions());
+    }
+
+    private void learnObjectCategories(ArrayList<Observation>[] list) {
+        if (list == null)
+            return;
+        for (ArrayList<Observation> observationList : list) {
+            if (observationList != null && !observationList.isEmpty()) {
+                Observation obs = observationList.get(0);
+                int iTypeIndex = iType2Index(obs.itype);
+                iTypeCategories[iTypeIndex] = obs.category;
+
+                if (obs.category == Types.TYPE_NPC) {
+                    dynamicMask = dynamicMask | (1 << iTypeIndex);
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Learns continuous moving enemies
+     */
+    private void learnContinuousMovingEnemies(YoloState state) {
         // Simulate CONTINUOUS_MOVIN_STATE_ADVANCES_COUNT many states (increment by 1 to store the source state)
         YoloState[] states = new YoloState[CONTINUOUS_MOVING_STATE_ADVANCES_COUNT + 1];
         states[0] = state;
-        for (int i = 1; i < states.length) {
+        for (int i = 1; i < states.length; i++) {
             states[i] = states[i - 1].copyAdvanceLearn(Types.ACTIONS.ACTION_NIL);
         }
 
         Vector2d[][] positions = new Vector2d[isContinuousMovingEnemy.length][states.length];
 
         // store positions of every npc for every state
-        for (int posIndex = 0; posIndex < states.length) {
+        for (int posIndex = 0; posIndex < states.length; posIndex++) {
 
             // get the npc Positions of the current state
             ArrayList<Observation>[] currentStateNpcPos = states[posIndex].getNpcPositions();
@@ -181,22 +260,23 @@ public class YoloKnowledge {
                 }
 
                 Observation obs = currentStateNpcPos[npcNr].get(0);
-                positions[obs.itype][posIndex] = obs.position;
+                int iTypeIndex = iType2Index(obs.itype);
+                positions[iTypeIndex][posIndex] = obs.position;
             }
         }
 
         // calculate distances between the states of the diffrent itypes
         // and check if it is a continuousMovingEnemy
-        for (int iType = 0; iType < positions.length; iType++) {
-            if (positions[iType][0] != null && positions[iType][1] != null && positions[iType][2] != null) {
+        for (int iTypeIndex = 0; iTypeIndex < positions.length; iTypeIndex++) {
+            if (positions[iTypeIndex][0] != null && positions[iTypeIndex][1] != null && positions[iTypeIndex][2] != null) {
                 continue;
             }
 
-            double zeroToFirstDistance = positions[iType][0].dist(positions[iType][1]);
-            double firstToSecondDistance = positions[iType][1].dist(positions[iType][2]);
+            double zeroToFirstDistance = positions[iTypeIndex][0].dist(positions[iTypeIndex][1]);
+            double firstToSecondDistance = positions[iTypeIndex][1].dist(positions[iTypeIndex][2]);
 
             if (zeroToFirstDistance == firstToSecondDistance && zeroToFirstDistance < state.getBlockSize()) {
-                isContinuousMovingEnemy[iType] = true;
+                isContinuousMovingEnemy[iTypeIndex] = true;
                 System.out.println("NPC moves continuously, maybe :-P");
             }
         }
@@ -204,10 +284,8 @@ public class YoloKnowledge {
 
     /**
      * Learns stochastic moving NPCs
-     *
-     * @param state The initial state of the game
      */
-    public void learnStochasticEffekts(YoloState state) {
+    private void learnStochasticEffekts(YoloState state) {
         Map<Integer, Vector2d> positions = new HashMap<Integer, Vector2d>();
         int stochasticNpcCount = 0;
 
@@ -235,8 +313,8 @@ public class YoloKnowledge {
 
 
                 // Check if this NPC was not recognized as stochastic before
-                int iType = nextStateNPCs[npcNr].get(0).itype;
-                if (!isStochasticEnemy[iType]) {
+                int iTypeIndex = iType2Index(nextStateNPCs[npcNr].get(0).itype);
+                if (!isStochasticEnemy[iTypeIndex]) {
 
                     // was not recognized as stochastic before, then check the position.
                     // if it is not stochastic all observation position of this iType should be the same position
@@ -253,7 +331,7 @@ public class YoloKnowledge {
                         } else {
                             if (!referencePos.equals(obs.position)) {
                                 //NPC stochastic movement detected!
-                                isStochasticEnemy[iType] = true;
+                                isStochasticEnemy[iTypeIndex] = true;
                                 stochasticNpcCount++;
                                 break;
                             }
@@ -262,7 +340,7 @@ public class YoloKnowledge {
                 }
 
                 //Iteration fuer diesen Itype durchgelaufen
-                if (isStochasticEnemy[iType])
+                if (isStochasticEnemy[iTypeIndex])
                     haveStochasticEnemy = true;        //Merke, dass es einen stochastischen Gegner gab!
             }
 
@@ -275,10 +353,5 @@ public class YoloKnowledge {
 
         if (!Agent.UPLOAD_VERSION)
             System.out.println("Stochastische NPCs: " + stochasticNpcCount);
-    }
-
-    public boolean isPlayerIType(int iType) {
-        // return true if the bit at position iType is 1 in the playerITypeMask
-        return ((playerITypeMask & (1 << iType)) > 0);
     }
 }
