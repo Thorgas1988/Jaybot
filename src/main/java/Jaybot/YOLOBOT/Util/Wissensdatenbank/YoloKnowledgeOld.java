@@ -1,10 +1,10 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
-import core.game.Event;
-import core.game.Observation;
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.SimpleState;
 import Jaybot.YOLOBOT.YoloState;
+import core.game.Event;
+import core.game.Observation;
 import ontology.Types;
 import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
@@ -701,11 +701,14 @@ public class YoloKnowledgeOld {
 	private void learnNpcMovement(YoloState currentState, YoloState lastState) {
 		ArrayList<Observation>[] lastNpcs = lastState.getNpcPositions();
 		ArrayList<Observation>[] nowNpcs = currentState.getNpcPositions();
+
 		if(nowNpcs == null || lastNpcs == null)
 			return;
 		HashMap<Integer, Observation> map;
 		int size = Math.min(nowNpcs.length, lastNpcs.length);
+
 		for (int npcNr = 0; npcNr < size; npcNr++) {
+
 			if(maxMovePerNPC_PerAxis[npcNr][AXIS_VALUE_NOT_CHANGE_INDEX] < 30000 && !lastNpcs[npcNr].isEmpty() && !nowNpcs[npcNr].isEmpty()){
 				//Gibt npcs dieses Typs!
 				map = new HashMap<Integer, Observation>(lastNpcs[npcNr].size());

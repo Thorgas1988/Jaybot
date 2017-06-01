@@ -2,6 +2,7 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
+import Jaybot.YOLOBOT.Util.SimpleState;
 import Jaybot.YOLOBOT.YoloState;
 import core.game.Event;
 import core.game.Observation;
@@ -49,6 +50,10 @@ public class YoloKnowledge {
 
     private PlayerUseEvent[][] useEffects;
 
+    private static final int AXIS_X = 0;
+    private static final int AXIS_Y = 1;
+    private int[][] maxMoveInPixelPerNpcIType;
+
     private RandomForest randomForestClassifier;
 
 
@@ -66,8 +71,10 @@ public class YoloKnowledge {
     /**
      * Should be called in the first second, before the game starts to fill the knowledge base with initial knowledge.
      */
-    public void initialize() {
-
+    public void initialize(YoloState initState) {
+        learnObjectCategories(initState);
+        learnContinuousMovingEnemies(initState);
+        learnStochasticEffects(initState);
     }
 
     /**
@@ -86,7 +93,11 @@ public class YoloKnowledge {
         dynamicMask = 0;
         iTypeCategories = new int[MAX_INDICES];
         hasScoreWithoutWinning = false;
+
         useEffects = new PlayerUseEvent[MAX_INDICES][MAX_INDICES];
+        // for every possible iType and for both axis (x and y)
+        maxMoveInPixelPerNpcIType = new int[MAX_INDICES][2];
+
         randomForestClassifier = new RandomForest(MAX_INDICES, 1000);
     }
 
@@ -134,6 +145,10 @@ public class YoloKnowledge {
             return;
         }
 
+        // learn general game information
+        learnNpcMovementRange(currentState, previousState);
+
+        // learn collision events
         TreeSet<core.game.Event> history = currentState.getEventsHistory();
         while (history.size() > 0) {
             Event collider = history.pollLast();
@@ -160,6 +175,132 @@ public class YoloKnowledge {
             else {
                 // learn the collision event
                 learnCollisionEvent(currentState, previousState, actionDone);
+            }
+        }
+    }
+
+    private void learnSpawner(YoloState currentState, YoloState lastState) {
+        int maxBefore = lastState.getMaxObsId();
+        if(maxBefore == -1){
+            maxBefore = getMaxObsId(lastState);
+            lastState.setMaxObsId(maxBefore);
+        }
+
+        SimpleState simpleBefore = lastState.getSimpleState();
+        ArrayList<Observation> spawns = getObservationsWithIdBiggerThan(currentState, maxBefore);
+        int blockSize = currentState.getBlockSize();
+
+        for (Observation observation : spawns) {
+            byte index = itypeToIndex(observation.itype);
+            if(spawnedBy[index] != -1 && spawnerInfoSure[spawnedBy[index]])
+                continue;
+            int spawnX = (int) (observation.position.x/blockSize);
+            int spawnY = (int) (observation.position.y/blockSize);
+            int mask = simpleBefore.getMask(spawnX, spawnY);
+            byte  spawnerItypeIndex = (byte) Integer.numberOfTrailingZeros(mask);
+            boolean onlyOneSpawnerPossible = Integer.numberOfLeadingZeros(mask)+spawnerItypeIndex == 31;
+            boolean isGoodGuess = false;
+            if(!onlyOneSpawnerPossible && positionAufSpielfeld(spawnX, spawnY)){
+                //Suche Portals
+                ArrayList<Observation> obsList = lastState.getObservationGrid()[spawnX][spawnY];
+                int portalsCount = 0;
+                Observation lastPortal = null;
+                for (Observation possibleSpawnObs : obsList) {
+                    if(possibleSpawnObs.category == Types.TYPE_PORTAL){
+                        portalsCount++;
+                        lastPortal = possibleSpawnObs;
+                        byte possibleSpawnItypeIndex = itypeToIndex(possibleSpawnObs.itype);
+                        if(spawnedBy[possibleSpawnItypeIndex] == -1){
+                            spawnerItypeIndex = possibleSpawnItypeIndex;
+                            isGoodGuess = true;
+                            break;
+                        }
+                    }
+                }
+                if(!isGoodGuess && lastPortal != null && portalsCount == 1){
+                    //No 'free' portal found, but only one --> choose this and override info!
+                    spawnerItypeIndex = itypeToIndex(lastPortal.itype);
+                    isGoodGuess = true;
+                }
+            }
+            if(onlyOneSpawnerPossible || isGoodGuess){
+                //Only one bit is set (One itype only on this field)
+
+                //Check if something disappered next to spawn:
+                ArrayList<Observation> nearObservations = new ArrayList<Observation>();
+                ArrayList<Observation>[][] grid = lastState.getObservationGrid();
+                if(positionAufSpielfeld(spawnX-1, spawnY))
+                    nearObservations.addAll(grid[spawnX-1][spawnY]);
+                if(positionAufSpielfeld(spawnX+1, spawnY))
+                    nearObservations.addAll(grid[spawnX+1][spawnY]);
+                if(positionAufSpielfeld(spawnX, spawnY-1))
+                    nearObservations.addAll(grid[spawnX][spawnY-1]);
+                if(positionAufSpielfeld(spawnX, spawnY+1))
+                    nearObservations.addAll(grid[spawnX][spawnY+1]);
+
+                SimpleState simpleNow = currentState.getSimpleState();
+                boolean nothingGone = true;
+                for (Observation nearObs : nearObservations) {
+                    if(simpleNow.getObservationWithIdentifier(nearObs.obsID) == null)
+                        nothingGone = false;
+                }
+
+
+                if(nothingGone){
+                    if(spawnerOf[spawnerItypeIndex] != index && spawnerInfoSure[spawnerItypeIndex]){
+                        //Wir wissen, dass der spawner etwas anderes spawnt!
+                        //TODO: interaktion mit normalerweise gespawntem lernen!?
+                    }else{
+                        spawnerOf[spawnerItypeIndex] = index;
+                        spawnerInfoSure[spawnerItypeIndex] = onlyOneSpawnerPossible;
+                        spawnedBy[index] = spawnerItypeIndex;
+                        isDynamic[index] = true;
+                        isDynamic[spawnerItypeIndex] = true;
+                        dynamicMask = dynamicMask | 1 << index;
+                        dynamicMask = dynamicMask | 1 << spawnerItypeIndex;
+                    }
+                }
+            }
+        }
+
+    }
+
+    /**
+     * Learns how far (maximum) a NPCs can walk/travel in one gametick.
+     */
+    private void learnNpcMovementRange(YoloState currentState, YoloState previousState) {
+        ArrayList<Observation>[] previousNpcs = previousState.getNpcPositions();
+        ArrayList<Observation>[] currentNpcs = currentState.getNpcPositions();
+        Map<Integer, Observation> previousObservationMap = new HashMap<>();
+
+        for (ArrayList<Observation> previousObservations : previousNpcs) {
+            for (Observation o : previousObservations) {
+                previousObservationMap.put(o.obsID, o);
+            }
+        }
+
+        for (ArrayList<Observation> currentObservations : currentNpcs) {
+            for (Observation currentObs : currentObservations) {
+                Observation previousObs = previousObservationMap.get(currentObs.obsID);
+
+                if (previousObs == null)
+                    continue;
+
+                int iTypeIndex = currentObs.itype;
+
+                Vector2d currentPos = currentObs.position;
+                Vector2d previousPos = previousObs.position;
+
+                int moveX = (int) Math.abs(currentPos.x - previousPos.x);
+                int moveY = (int) Math.abs(currentPos.y - previousPos.y);
+
+                if (moveX > maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_X]) {
+                    maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_X] = moveX;
+                }
+
+                if (moveY > maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_Y]) {
+                    maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_Y] = moveY;
+                }
             }
         }
     }
@@ -285,7 +426,7 @@ public class YoloKnowledge {
     /**
      * Learns stochastic moving NPCs
      */
-    private void learnStochasticEffekts(YoloState state) {
+    private void learnStochasticEffects(YoloState state) {
         Map<Integer, Vector2d> positions = new HashMap<Integer, Vector2d>();
         int stochasticNpcCount = 0;
 
