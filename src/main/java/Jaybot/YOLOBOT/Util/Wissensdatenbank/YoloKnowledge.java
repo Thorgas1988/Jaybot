@@ -9,10 +9,7 @@ import core.game.Observation;
 import ontology.Types;
 import tools.Vector2d;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Created by Torsten on 27.05.17.
@@ -21,10 +18,10 @@ public class YoloKnowledge {
     public static boolean DEACTIVATE_LEARNING = false;
 
     private static final double SQRT_2 = Math.sqrt(2.0);
-    private static final  int MAX_INDICES = 32;
-    private static final  int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
-    private static final  int STOCHASTIC_ITERATIONS_COUNT = 10;
-    private static final  int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
+    private static final int MAX_INDICES = 32;
+    private static final int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
+    private static final int STOCHASTIC_ITERATIONS_COUNT = 10;
+    private static final int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
 
     private static YoloKnowledge instance = null;
 
@@ -39,6 +36,8 @@ public class YoloKnowledge {
 
     private boolean[] isContinuousMovingEnemy;
     private boolean[] isStochasticEnemy;
+    private int[] spawnedNPCiTypes;
+    private int[] spawnedRessourceiTypes;
 
     private int playerITypeMask;
 
@@ -83,7 +82,7 @@ public class YoloKnowledge {
     public void reset() {
         currentITypeIndex = 0;
         iType2IndexMap = new int[Byte.MAX_VALUE];
-        for (int i=0; i<iType2IndexMap.length; i++) {
+        for (int i = 0; i < iType2IndexMap.length; i++) {
             iType2IndexMap[i] = -1;
         }
 
@@ -91,6 +90,8 @@ public class YoloKnowledge {
         isStochasticEnemy = new boolean[MAX_INDICES];
         playerITypeMask = 0;
         dynamicMask = 0;
+        spawnedNPCiTypes = new int[MAX_INDICES];
+        spawnedRessourceiTypes = new int[MAX_INDICES];
         iTypeCategories = new int[MAX_INDICES];
         hasScoreWithoutWinning = false;
 
@@ -136,11 +137,11 @@ public class YoloKnowledge {
      */
     public void learnFrom(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
 
-        if(currentState == null || previousState == null || DEACTIVATE_LEARNING)
+        if (currentState == null || previousState == null || DEACTIVATE_LEARNING)
             return;
 
-        if(currentState.getGameTick() != previousState.getGameTick()+1){
-            if(!Agent.UPLOAD_VERSION)
+        if (currentState.getGameTick() != previousState.getGameTick() + 1) {
+            if (!Agent.UPLOAD_VERSION)
                 System.out.println("No sequential states given!");
             return;
         }
@@ -179,9 +180,74 @@ public class YoloKnowledge {
         }
     }
 
-    private void learnSpawner(YoloState currentState, YoloState lastState) {
+    private void learnSpawner(YoloState currentState, YoloState previousState) {
+        // step one to the left and one to the right or one up and one down
+        final int[] steps = new int[]{-1, 1};
+        final int maxX = currentState.getObservationGrid().length - 1;
+        final int maxY = currentState.getObservationGrid()[0].length - 1;
+
+        SimpleState currentSimpleState = currentState.getSimpleState();
+        SimpleState previousSimpleState = previousState.getSimpleState();
+
+        ArrayList<Observation>[] portalObservationsArray = currentState.getPortalsPositions();
+
+        for (ArrayList<Observation> portalObs : portalObservationsArray) {
+            for (Observation portal : portalObs) {
+                Vector2d portalPos = portal.position;
+                int portalITypeIndex = iType2Index(portal.itype);
+                int[] previousMasks = new int[steps.length * steps.length];
+                int[] currentMasks = new int[steps.length * steps.length];
+
+
+                for (int xStepIndex = 0; xStepIndex < steps.length; xStepIndex++) {
+                    for (int yStepIndex = 0; yStepIndex < steps.length; yStepIndex++) {
+
+                        int x = (int) portalPos.x + steps[xStepIndex];
+                        int y = (int) portalPos.y + steps[yStepIndex];
+
+                        if (x < 0 || y < 0 || x > maxX || y > maxY) {
+                            continue;
+                        }
+
+                        previousMasks[xStepIndex + (yStepIndex * steps.length)] = previousSimpleState.getMask(x, y);
+                        currentMasks[xStepIndex + (yStepIndex * steps.length)] = currentSimpleState.getMask(x, y);
+                    }
+                }
+
+                int[] maskDiffs = new int[currentMasks.length];
+                int diffCount = 0;
+                for (int i = 0; i < currentMasks.length; i++) {
+                    maskDiffs[i] = currentMasks[i] ^ previousMasks[i];
+                    diffCount += Integer.bitCount(maskDiffs[i]);
+                }
+
+                // is das so richtig? wenn ein npc auf dem spawner stand und jetzt auf ein feld weiter läuft oder von außerhalb
+                // zufälligerweise auf das feld läuft wird er als spawn erkannt...
+                // vill doch über die Observations gehen?
+                // vill reicht es einfach sicherzustellen das das spawnerfeld keine observation "verloren" hat
+                // und das feld eins weiter außen auch nicht
+                // also beispiel: | X ist der NPC, S der Spawner, O ein leeres feld.
+                //  O
+                // OXS
+                //  O
+                // wir müssen nur prüfen, dass die 4 direkten Nachbarfelder (oben, rechts, unten, links) um das potentielle gespawnte Objekt keinen NPC verloren haben...
+                // da wir einfach mal behaupten ein NPC wäre maximal ein Feld gelaufen und er damit nur von einem der direkten Nachbarfelder kommen konnte, wenn er nicht gespawnt wurde.
+                // d.h. wir müssen um den Spawner die 4 Felder auf gespawnte Objekte testen und für jedes der Felder jeweils nochmal 4 Felder
+                // also 16 Tests.
+                // wir können aber nach dem ersten sicher gespawnten Objekt aufhören, da die anderen Felder falls was dazu gekommen ist nicht gespawnt sein können, da es nur ein Zeitschritt war.
+
+
+                // we found a spawned
+                if (diffCount == 1) {
+
+                }
+
+            }
+        }
+
+
         int maxBefore = lastState.getMaxObsId();
-        if(maxBefore == -1){
+        if (maxBefore == -1) {
             maxBefore = getMaxObsId(lastState);
             lastState.setMaxObsId(maxBefore);
         }
@@ -192,65 +258,65 @@ public class YoloKnowledge {
 
         for (Observation observation : spawns) {
             byte index = itypeToIndex(observation.itype);
-            if(spawnedBy[index] != -1 && spawnerInfoSure[spawnedBy[index]])
+            if (spawnedBy[index] != -1 && spawnerInfoSure[spawnedBy[index]])
                 continue;
-            int spawnX = (int) (observation.position.x/blockSize);
-            int spawnY = (int) (observation.position.y/blockSize);
+            int spawnX = (int) (observation.position.x / blockSize);
+            int spawnY = (int) (observation.position.y / blockSize);
             int mask = simpleBefore.getMask(spawnX, spawnY);
-            byte  spawnerItypeIndex = (byte) Integer.numberOfTrailingZeros(mask);
-            boolean onlyOneSpawnerPossible = Integer.numberOfLeadingZeros(mask)+spawnerItypeIndex == 31;
+            byte spawnerItypeIndex = (byte) Integer.numberOfTrailingZeros(mask);
+            boolean onlyOneSpawnerPossible = Integer.numberOfLeadingZeros(mask) + spawnerItypeIndex == 31;
             boolean isGoodGuess = false;
-            if(!onlyOneSpawnerPossible && positionAufSpielfeld(spawnX, spawnY)){
+            if (!onlyOneSpawnerPossible && positionAufSpielfeld(spawnX, spawnY)) {
                 //Suche Portals
                 ArrayList<Observation> obsList = lastState.getObservationGrid()[spawnX][spawnY];
                 int portalsCount = 0;
                 Observation lastPortal = null;
                 for (Observation possibleSpawnObs : obsList) {
-                    if(possibleSpawnObs.category == Types.TYPE_PORTAL){
+                    if (possibleSpawnObs.category == Types.TYPE_PORTAL) {
                         portalsCount++;
                         lastPortal = possibleSpawnObs;
                         byte possibleSpawnItypeIndex = itypeToIndex(possibleSpawnObs.itype);
-                        if(spawnedBy[possibleSpawnItypeIndex] == -1){
+                        if (spawnedBy[possibleSpawnItypeIndex] == -1) {
                             spawnerItypeIndex = possibleSpawnItypeIndex;
                             isGoodGuess = true;
                             break;
                         }
                     }
                 }
-                if(!isGoodGuess && lastPortal != null && portalsCount == 1){
+                if (!isGoodGuess && lastPortal != null && portalsCount == 1) {
                     //No 'free' portal found, but only one --> choose this and override info!
                     spawnerItypeIndex = itypeToIndex(lastPortal.itype);
                     isGoodGuess = true;
                 }
             }
-            if(onlyOneSpawnerPossible || isGoodGuess){
+            if (onlyOneSpawnerPossible || isGoodGuess) {
                 //Only one bit is set (One itype only on this field)
 
                 //Check if something disappered next to spawn:
                 ArrayList<Observation> nearObservations = new ArrayList<Observation>();
                 ArrayList<Observation>[][] grid = lastState.getObservationGrid();
-                if(positionAufSpielfeld(spawnX-1, spawnY))
-                    nearObservations.addAll(grid[spawnX-1][spawnY]);
-                if(positionAufSpielfeld(spawnX+1, spawnY))
-                    nearObservations.addAll(grid[spawnX+1][spawnY]);
-                if(positionAufSpielfeld(spawnX, spawnY-1))
-                    nearObservations.addAll(grid[spawnX][spawnY-1]);
-                if(positionAufSpielfeld(spawnX, spawnY+1))
-                    nearObservations.addAll(grid[spawnX][spawnY+1]);
+                if (positionAufSpielfeld(spawnX - 1, spawnY))
+                    nearObservations.addAll(grid[spawnX - 1][spawnY]);
+                if (positionAufSpielfeld(spawnX + 1, spawnY))
+                    nearObservations.addAll(grid[spawnX + 1][spawnY]);
+                if (positionAufSpielfeld(spawnX, spawnY - 1))
+                    nearObservations.addAll(grid[spawnX][spawnY - 1]);
+                if (positionAufSpielfeld(spawnX, spawnY + 1))
+                    nearObservations.addAll(grid[spawnX][spawnY + 1]);
 
                 SimpleState simpleNow = currentState.getSimpleState();
                 boolean nothingGone = true;
                 for (Observation nearObs : nearObservations) {
-                    if(simpleNow.getObservationWithIdentifier(nearObs.obsID) == null)
+                    if (simpleNow.getObservationWithIdentifier(nearObs.obsID) == null)
                         nothingGone = false;
                 }
 
 
-                if(nothingGone){
-                    if(spawnerOf[spawnerItypeIndex] != index && spawnerInfoSure[spawnerItypeIndex]){
+                if (nothingGone) {
+                    if (spawnerOf[spawnerItypeIndex] != index && spawnerInfoSure[spawnerItypeIndex]) {
                         //Wir wissen, dass der spawner etwas anderes spawnt!
                         //TODO: interaktion mit normalerweise gespawntem lernen!?
-                    }else{
+                    } else {
                         spawnerOf[spawnerItypeIndex] = index;
                         spawnerInfoSure[spawnerItypeIndex] = onlyOneSpawnerPossible;
                         spawnedBy[index] = spawnerItypeIndex;
@@ -323,21 +389,21 @@ public class YoloKnowledge {
     private void learnUseEvent(YoloState currentState, YoloState lastState,
                                Event collider) {
 
-        if(!Agent.UPLOAD_VERSION)
+        if (!Agent.UPLOAD_VERSION)
             System.out.println("Learn Use Event: " + collider.activeSpriteId + " -> " + collider.passiveSpriteId);
 
         int otherITypeIndex = iType2Index(collider.passiveTypeId);
         int playerObjITypeIndex = iType2Index(collider.activeTypeId);
         boolean wall = currentState.getSimpleState().getObservationWithIdentifier(collider.passiveSpriteId) != null;
 
-        if(useEffects[playerObjITypeIndex][otherITypeIndex] == null){
+        if (useEffects[playerObjITypeIndex][otherITypeIndex] == null) {
             useEffects[playerObjITypeIndex][otherITypeIndex] = new PlayerUseEvent();
         }
 
         PlayerUseEvent uEvent = useEffects[playerObjITypeIndex][otherITypeIndex];
-        byte deltaScore = (byte) (currentState.getGameScore()-lastState.getGameScore());
+        byte deltaScore = (byte) (currentState.getGameScore() - lastState.getGameScore());
 
-        if(!hasScoreWithoutWinning && deltaScore>0 && !currentState.isGameOver())
+        if (!hasScoreWithoutWinning && deltaScore > 0 && !currentState.isGameOver())
             hasScoreWithoutWinning = true;
 
         uEvent.learnTriggerEvent(deltaScore, wall);
