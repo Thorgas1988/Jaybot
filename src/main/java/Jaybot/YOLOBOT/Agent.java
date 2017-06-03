@@ -1,5 +1,6 @@
 package Jaybot.YOLOBOT;
 
+import core.game.Observation;
 import core.game.StateObservation;
 import core.player.AbstractPlayer;
 import Jaybot.YOLOBOT.SubAgents.BreitenSucheAgent;
@@ -14,6 +15,7 @@ import ontology.Types.ACTIONS;
 import tools.ElapsedCpuTimer;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,7 +23,7 @@ public class Agent extends AbstractPlayer {
 
 	public final static boolean UPLOAD_VERSION = true;
 	public final static boolean DRAW_TARGET_ONLY = false;
-	public final static boolean FORCE_PAINT = true;
+	public final static boolean FORCE_PAINT = false;
 	public final static boolean VIEW_ADVANCES = false;
 	public static final double PAINT_SCALE = 1;
 
@@ -149,7 +151,7 @@ public class Agent extends AbstractPlayer {
 
 		}
 		//TODO: Norman: Delete if you want, i use this for monitor the traffic on my pc
-		System.out.println("Advances:"+YoloState.advanceCounter);
+		//System.out.println("Advances:"+YoloState.advanceCounter);
 
 		YoloState.advanceCounter = 0;
 
@@ -270,7 +272,7 @@ public class Agent extends AbstractPlayer {
 				for (Observation temp : portals[k]) {
 					int[] posXY = YoloKnowledge.instance.vectorPosToGridPos(temp.position, block_size);
 
-					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y+12);
 				}
 			}
 
@@ -278,16 +280,32 @@ public class Agent extends AbstractPlayer {
 			for (int k = 0; k < movPos.length; k++) {
 				for (Observation temp : movPos[k]) {
 
-					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y+12);
 				}
 			}
 
+			ArrayList<Observation> imMovPos[] = currentYoloState.getImmovablePositions();
+			for (int k = 0; k < imMovPos.length; k++) {
+				for (Observation temp : imMovPos[k]) {
+
+					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y+12);
+				}
+			}
+
+			ArrayList<Observation> avPos[] = currentYoloState.getFromAvatarSpritesPositions();
+			for (int k = 0; k < avPos.length; k++) {
+				for (Observation temp : avPos[k]) {
+
+					g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+				}
+			}
+*/
 			ArrayList<Observation> immPos[] = currentYoloState.getResourcesPositions();
 			for (int k = 0; k < immPos.length; k++) {
 				for (Observation temp : immPos[k]) {
 					if (temp.itype != 2)
 					{
-						g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+						g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y+12);
 					}
 
 				}
@@ -310,7 +328,7 @@ public class Agent extends AbstractPlayer {
 
 				}
 			}
-*/
+
 			g.setColor(Color.MAGENTA);
 
 			boolean spawnMap[][] = YoloKnowledge.instance.continuousKillerMap;
@@ -325,7 +343,7 @@ public class Agent extends AbstractPlayer {
 								currentYoloState.getBlockSize());
 					}
 					//TODO: IMPORTANT, if you delete this go to Yoloknowledgebase -> calculateContinuousKillerMap and switch on deletion
-					spawnMap[i][j] = false;
+					//spawnMap[i][j] = false;
 				}
 			}
 

@@ -64,6 +64,7 @@ public class YoloKnowledge {
 	private boolean[] isDynamic; // See learnDynamicObjects()
 	private int dynamicMask; // See learnDynamicObjects()
 	private int playerIndexMask; // See learnFrom()
+	public int indexIsEvilSpawner;
 	private boolean[][] hasBeenAliveAt; // See learnAlivePosition()
 	private byte[] spawnerOf; // See learnSpawner()
 	private boolean[] spawnerInfoSure; // See learnSpawner()
@@ -75,7 +76,7 @@ public class YoloKnowledge {
 	private byte[] npcMoveModuloTicks; // See learnNpcMovement()
 	private boolean haveEverGotScoreWithoutWinning;
 	private short[] isContinuousMovingEnemy;
-	public boolean continuousKillerMap[][];
+	public boolean[][] continuousKillerMap;
 
 	private int fromAvatarMask;
 
@@ -708,16 +709,6 @@ public class YoloKnowledge {
 				if(positionAufSpielfeld(spawnX, spawnY+1))
 					nearObservations.addAll(grid[spawnX][spawnY+1]);
 
-				for (Iterator<Observation> iter = nearObservations.iterator(); iter.hasNext(); )
-				{
-					Observation nearObs = iter.next();
-
-					if (nearObs.category == Types.TYPE_RESOURCE)
-					{
-						iter.remove();
-					}
-				}
-
 				SimpleState simpleNow = currentState.getSimpleState();
 				boolean nothingGone = true;
 				for (Observation nearObs : nearObservations) {
@@ -961,11 +952,52 @@ public class YoloKnowledge {
 		}
 	}
 
+	private void learnEvilSpawners(YoloState currentState, YoloState lastState, int x, int y)
+	{
+		boolean loose = currentState.getGameWinner() == WINNER.PLAYER_LOSES;
+
+		if (loose) {
+			//war ein spawner auf dem Feld?
+			ArrayList<Observation> observations = currentState.getObservationGrid()[x][y];
+
+			for (Observation obs : observations) {
+				if (obs.category == Types.TYPE_PORTAL) {
+					//System.out.println("This portal:" + obs.itype);
+					//ok is a portal, but is it a spawner?
+					if (isSpawner(obs.itype)) {
+						if (DEBUG)
+						System.out.println("This itype is an evil spawner index:" + itypeToIndex(obs.itype)+" itype:"+obs.itype);
+						//it spawns something, it is very sure evil
+
+						indexIsEvilSpawner |= 1 << itypeToIndex(obs.itype);
+					}
+				}
+
+				if (lastState.getSimpleState().getObservationWithIdentifier(obs.obsID) == null) {
+					//System.out.println("This enemy:" + obs.itype);
+					//at last tick there was an enemy
+					if (spawnedBy[itypeToIndex(obs.itype)] != -1) {
+						if (DEBUG)
+						System.out.println("This enemy "+obs.itype+" is spawned by this evil spawner index:" + spawnedBy[itypeToIndex(obs.itype)]+ " itype:" + indexToItype(spawnedBy[itypeToIndex(obs.itype)]));
+
+						//there is a spawner who spawned this evil enemy => avatar could get killed by this spawner
+
+						indexIsEvilSpawner |= 1 << spawnedBy[itypeToIndex(obs.itype)];
+					}
+				}
+			}
+		}
+	}
+
 
 	private void learnGameEnd(YoloState currentState, YoloState lastState, ACTIONS action) {
 //		System.out.println("Tod oder Sieg?");
+
 		int x = lastState.getAvatarX();
 		int y = lastState.getAvatarY();
+
+		learnEvilSpawners(currentState, lastState,x, y);
+
 		int avatarIndex = itypeToIndex(lastState.getAvatar().itype);
 		Vector2d orientation = lastState.getAvatarOrientation();
 		byte[] inventory = lastState.getInventoryArray();
@@ -1456,52 +1488,33 @@ public class YoloKnowledge {
 
 		//Might Block, check PlayerEvents:
 		int playerIndex = itypeToIndex(currentState.getAvatar().itype);
+		if (DEBUG && x == 0 && y==3)
+		System.out.println("Field x:"+x+" y:"+y);
 		for (Observation obs : currentState.getObservationGrid()[x][y]) {
 			int index = itypeToIndex(obs.itype);
-
 			//Bad-SpawnerCheck:
 			if (isSpawner(obs.itype)) {
+				if (DEBUG && x == 0 && y==3)
+					System.out.println("index:"+index+" itype:"+obs.itype+" isSpawner(obs.itype):"+isSpawner(obs.itype));
+				/*
 				int iTypeIndexOfSpawner = getSpawnIndexOfSpawner(obs.itype);
 				PlayerEvent spawnedPEvent = getPlayerEvent(	currentState.getAvatar().itype,
 						indexToItype(iTypeIndexOfSpawner), true);
 				YoloEvent spawnedEvent = spawnedPEvent.getEvent(currentState.getInventoryArray());
 				boolean isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
+				*/
+
+				boolean isBadSpawner = (mask & indexIsEvilSpawner) != 0;
+
 				if(isBadSpawner){
-					//TODO: Bad Spawner Detection is crappy
-					/*
-					continuousKillerMap[x][y] = 1;
-
-					//don't move in hole or between two evil spawner
-					if (!positionAufSpielfeld(x+2, y) || continuousKillerMap[x+2][y] == 1)
-					{
-						if (positionAufSpielfeld(x+1, y))
-						{
-							continuousKillerMap[x+1][y] = 1;
-						}
-					}
-					if (!positionAufSpielfeld(x-2, y) || continuousKillerMap[x-2][y] == 1)
-					{
-						if (positionAufSpielfeld(x-1, y))
-						{
-							continuousKillerMap[x-1][y] = 1;
-						}
-					}
-					if (!positionAufSpielfeld(x, y+2) || continuousKillerMap[x][y+2] == 1)
-					{
-						if (positionAufSpielfeld(x, y+1))
-						{
-							continuousKillerMap[x][y+1] = 1;
-						}
-					}
-					if (!positionAufSpielfeld(x, y-2) || continuousKillerMap[x][y-2] == 1)
-					{
-						if (positionAufSpielfeld(x, y-1))
-						{
-							continuousKillerMap[x][y-1] = 1;
-						}
-					}*/
-
+					if (DEBUG)
+					System.out.println("EVIL, spawner:"+itypeToIndex(obs.itype)+" mask:"+mask+ " indexEvils:"+indexIsEvilSpawner);
 					return true;
+				}
+				else
+				{
+					if (DEBUG)
+					System.out.println("OK, spawner:"+itypeToIndex(obs.itype)+" mask:"+mask+ " indexEvils:"+indexIsEvilSpawner);
 				}
 			}
 
@@ -1781,8 +1794,8 @@ public class YoloKnowledge {
 		//reset old values
 		for (int i = 0; i < MAX_X; i++) {
 			for (int j = 0; j < MAX_Y; j++) {
-				//TODO: RESET MAP or make local
-				//continuousKillerMap[i][j] = false;
+				//TODO: if you want to paint, you have to disable this
+				continuousKillerMap[i][j] = false;
 			}
 		}
 
@@ -1807,49 +1820,54 @@ public class YoloKnowledge {
 					//#0#
 					//###
 					continuousKillerMap[x][y] = true;
-					if (midX - (gridX * currentState.getBlockSize()) < halfBlock)
-					{
-						if (midY - (gridY * currentState.getBlockSize()) < halfBlock)
-						{
-							if (positionAufSpielfeld(x-1, y-1))
-							{
+					if (midX - (gridX * currentState.getBlockSize()) < halfBlock) {
+						if (midY - (gridY * currentState.getBlockSize()) < halfBlock) {
+							if (positionAufSpielfeld(x - 1, y - 1)) {
 								//0##
 								//###
 								//###
-								continuousKillerMap[x-1][y-1] = true;
+								continuousKillerMap[x - 1][y - 1] = true;
+								if (positionAufSpielfeld(x - 2, y - 2)) {
+									//0###
+									//####
+									//####
+									//####
+									continuousKillerMap[x - 2][y - 2] = true;
+								}
 							}
-							if (positionAufSpielfeld(x, y-1))
-							{
+							if (positionAufSpielfeld(x, y - 1)) {
 								//#0#
 								//###
 								//###
-								continuousKillerMap[x][y-1] = true;
+								continuousKillerMap[x][y - 1] = true;
 							}
-						}
-						else
-						{
-							if (positionAufSpielfeld(x-1, y+1))
-							{
+						} else {
+							if (positionAufSpielfeld(x - 1, y + 1)) {
 								//###
 								//###
 								//0##
-								continuousKillerMap[x-1][y+1] = true;
+								continuousKillerMap[x - 1][y + 1] = true;
+								if (positionAufSpielfeld(x - 2, y + 2)) {
+									//####
+									//####
+									//####
+									//0###
+									continuousKillerMap[x - 2][y + 2] = true;
+								}
 							}
-							if (positionAufSpielfeld(x, y+1))
-							{
+							if (positionAufSpielfeld(x, y + 1)) {
 								//###
 								//###
 								//#0#
-								continuousKillerMap[x][y+1] = true;
+								continuousKillerMap[x][y + 1] = true;
 							}
 						}
 
-						if (positionAufSpielfeld(x-1, y))
-						{
+						if (positionAufSpielfeld(x - 1, y)) {
 							//###
 							//0##
 							//###
-							continuousKillerMap[x-1][y] = true;
+							continuousKillerMap[x - 1][y] = true;
 						}
 					}
 					else
@@ -1862,6 +1880,13 @@ public class YoloKnowledge {
 								//###
 								//###
 								continuousKillerMap[x+1][y-1] = true;
+								if (positionAufSpielfeld(x + 2, y - 2)) {
+									//###0
+									//####
+									//####
+									//####
+									continuousKillerMap[x + 2][y - 2] = true;
+								}
 							}
 							if (positionAufSpielfeld(x, y-1))
 							{
@@ -1879,6 +1904,13 @@ public class YoloKnowledge {
 								//###
 								//##0
 								continuousKillerMap[x+1][y+1] = true;
+								if (positionAufSpielfeld(x + 2, y + 2)) {
+									//####
+									//####
+									//####
+									//###0
+									continuousKillerMap[x + 2][y + 2] = true;
+								}
 							}
 							if (positionAufSpielfeld(x, y+1))
 							{
@@ -1902,6 +1934,8 @@ public class YoloKnowledge {
 		}
 	}
 
+	//Another option to calculate distance to continuous moving enemys, but less effective than
+	//calculateContinuousKillerMap
 	public Observation canBeKilledByEnemyNearby(YoloState currentState, int x, int y)
 	{
 		ArrayList<Observation>[][] grid = currentState.getObservationGrid();
@@ -2182,5 +2216,18 @@ public class YoloKnowledge {
 	}
 	public int getDynamicMask() {
 		return dynamicMask;
+	}
+
+	public int[] vectorPosToGridPos(Vector2d position, int block_size)
+	{
+		int[] posXY = new int[2];
+
+		int posX = (int)(position.x / block_size);
+		int posY = (int)(position.y / block_size);
+
+		posXY[0] = posX;
+		posXY[1] = posY;
+
+		return posXY;
 	}
 }

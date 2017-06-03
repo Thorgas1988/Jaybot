@@ -47,36 +47,43 @@ public class JaybotTest {
         ArcadeMachine.runOneGame(game, level1, true, Agent.class.getCanonicalName(), recordActionsFile, seed, 0);
     }
 
-    //@Test
-    @Ignore
+    @Test
+    //@Ignore
     public void runGameInLoop() {
-        int times = 50;
+        int times = 30;
         int wins = 0;
         int disq = 0;
         int loose = 0;
-        for (int i = 0; i < times; i++) {
-                ++levelIdx;
+        for (int j = 0; j < 4; j++)
+        {
+            for (int i = 0; i < times; i++) {
                 double[] testresult = ArcadeMachine.runOneGame(game, level1, false, Agent.class.getCanonicalName(), null, seed, 0);
                 System.out.println("Level:"+levelIdx+"+,testresult[0]:+"+testresult[0]);
 
                 //TODO: Works only for jaws #31
-                if (testresult[0] > 1000)
+                if (testresult[0] > 1000) {
                     wins++;
-                else if(testresult[0] == -1000)
+                }
+                else if(testresult[0] == -1000) {
                     disq++;
-                else
+                }
+                else {
                     loose++;
+                }
 
                 //wrap around
-                if (levelIdx == 4)
+                if (levelIdx == 4) {
                     levelIdx = 0;
+                }
+            }
+            System.out.println("Level:"+levelIdx);
+            ++levelIdx;
+            System.out.println("Wins:"+wins);
+            System.out.println("Disqualified:"+disq);
+            System.out.println("Loose:"+loose);
+            int all = wins+disq+loose;
+            System.out.println("Win Rate:"+(double)wins/(double)all);
         }
-        System.out.println("Wins:"+wins);
-        System.out.println("Disqualified:"+disq);
-        System.out.println("Loose:"+loose);
-        int all = wins+disq+loose;
-        System.out.println("Win Rate:"+(double)wins/(double)all);
-
     }
 
     @Test
