@@ -321,6 +321,7 @@ public class TargetChooser {
 
         if (YoloKnowledge.instance.isSpawner(observation.itype)) {
             isPortal = false;
+            /*
             int iTypeIndexOfSpawner = YoloKnowledge.instance
                     .getSpawnIndexOfSpawner(observation.itype);
             PlayerEvent spawnedPEvent = YoloKnowledge.instance.getPlayerEvent(
@@ -328,8 +329,8 @@ public class TargetChooser {
                     YoloKnowledge.instance.indexToItype(iTypeIndexOfSpawner),
                     true);
             YoloEvent spawnedEvent = spawnedPEvent.getEvent(state
-                    .getInventoryArray());
-            isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
+                    .getInventoryArray());*/
+            isBadSpawner = (mask & YoloKnowledge.instance.indexIsEvilSpawner) != 0;
         }
         boolean isInventoryFull = false;
         if (inventoryIncrease) {
@@ -351,7 +352,10 @@ public class TargetChooser {
             prioValue -= 500;
         }
 
-        if (isBadSpawner && !useActionEffective) {
+        if (isBadSpawner) {
+            prioValue -= 1000;
+        }
+        if (!useActionEffective) {
             prioValue -= 1000;
         }
         if (decreaseScore) {
