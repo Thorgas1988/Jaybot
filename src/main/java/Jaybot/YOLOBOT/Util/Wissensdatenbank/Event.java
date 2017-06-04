@@ -5,6 +5,29 @@ import Jaybot.YOLOBOT.Agent;
 
 public abstract class Event {
 
+	/**
+	 * Speichert Byte events.
+	 * <br>Eintraege gehoeren zu:<br>
+	 * <ul>
+	 * <li> 0 = itype </li>
+	 * <li> 1 = scoreDelta </li>
+	 * <li> 2 = spawnedItype </li>
+	 * <li> 3 = teleportTo </li>
+	 * <li> 4 = addInventory </li>
+	 * <li> 5 = removeInventory </li>
+	 * </ul>
+	 */
+
+	/**
+	 * Speichert Boolean events.
+	 * <br>Eintraege gehoeren zu:<br>
+	 * <ul>
+	 * <li> 0 = killed </li>
+	 * <li> 1 = winGame </li>
+	 * <li> 2 = move </li>
+	 * </ul>
+	 */
+
 	private final static boolean DEBUG = false;
 	// Minimal and maximal number for byteEventsProbability and boolEventProbability
 	public static final Byte MIN_VALUE = -120, MAX_VALUE = 120;
