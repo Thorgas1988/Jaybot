@@ -17,6 +17,8 @@ import java.util.*;
 public class YoloKnowledge {
     public static boolean DEACTIVATE_LEARNING = false;
 
+    public static int UNDEFINED = YoloEvent.UNDEFINED;
+
     private static final double SQRT_2 = Math.sqrt(2.0);
     private static final int MAX_INDICES = 32;
     private static final int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
@@ -83,7 +85,7 @@ public class YoloKnowledge {
         currentITypeIndex = 0;
         iType2IndexMap = new int[Byte.MAX_VALUE];
         for (int i = 0; i < iType2IndexMap.length; i++) {
-            iType2IndexMap[i] = -1;
+            iType2IndexMap[i] = UNDEFINED;
         }
 
         isContinuousMovingEnemy = new boolean[MAX_INDICES];
@@ -103,7 +105,7 @@ public class YoloKnowledge {
     }
 
     private int iType2Index(int iType) {
-        if (iType2IndexMap[iType] == -1) {
+        if (iType2IndexMap[iType] == UNDEFINED) {
             iType2IndexMap[iType] = currentITypeIndex;
             currentITypeIndex++;
         }
@@ -148,6 +150,7 @@ public class YoloKnowledge {
 
         // learn general game information
         learnNpcMovementRange(currentState, previousState);
+        learnSpawner(currentState, previousState);
 
         // learn collision events
         TreeSet<core.game.Event> history = currentState.getEventsHistory();
@@ -180,155 +183,142 @@ public class YoloKnowledge {
         }
     }
 
-    private void learnSpawner(YoloState currentState, YoloState previousState) {
+    private void setSpawnedIType(Observation spawnedIType, int portalIType) {
+        int portalIndex = iType2Index(portalIType);
+
+        if (spawnedIType.category == Types.TYPE_NPC) {
+            spawnedNPCiTypes[portalIndex] = spawnedIType.itype;
+            return;
+        }
+
+        if (spawnedIType.category == Types.TYPE_RESOURCE) {
+            spawnedRessourceiTypes[portalIndex] = spawnedIType.itype;
+        }
+    }
+
+    private List<Observation> getAdjacentObservations(YoloState state, int x, int y) {
+        final List<Observation> result = new LinkedList<>();
+        final ArrayList<Observation>[][] grid = state.getObservationGrid()[][];
+        final int xMax = grid.length;
+        final int yMax = grid[0].length;
+
         // step one to the left and one to the right or one up and one down
         final int[] steps = new int[]{-1, 1};
-        final int maxX = currentState.getObservationGrid().length - 1;
-        final int maxY = currentState.getObservationGrid()[0].length - 1;
 
-        SimpleState currentSimpleState = currentState.getSimpleState();
-        SimpleState previousSimpleState = previousState.getSimpleState();
+        // check the field "left" and "right" from the current field.
+        for (int xStep : steps) {
+            int tempX = x + xStep;
 
-        ArrayList<Observation>[] portalObservationsArray = currentState.getPortalsPositions();
+            if (tempX < 0 || tempX > xMax) {
+                continue;
+            }
+
+            result.addAll(grid[tempX][y]);
+        }
+
+        // check the field "above" and "under" the current field.
+        for (int yStep : steps) {
+            int tempY = y + yStep;
+
+            if (tempY < 0 || tempY > xMax) {
+                continue;
+            }
+
+            result.addAll(grid[x][tempY]);
+        }
+    }
+
+    private Observation findITypeSpawnedOnPosition(YoloState currentState, YoloState previousState, int x, int y) {
+        ArrayList<Observation> spawnedCanidates = new ArrayList<>();
+        ArrayList<Observation> obsCurrent = currentState.getObservationGrid()[x][y];
+
+        // Add the observations of the previous state from the "searched" field
+        List<Observation> obsPrevious = new LinkedList<>(previousState.getObservationGrid()[x][y]);
+
+        for (Observation currentObservation : obsCurrent) {
+            if (! (currentObservation.category == Types.TYPE_NPC || currentObservation.category == Types.TYPE_RESOURCE)) {
+                continue;
+            }
+
+            // add all observations of adjacent fields
+            obsPrevious.addAll(getAdjacentObservations(previousState, x, y));
+
+            // check if the currentObservation did exist in the previous state either
+            // on the searched field or on adjacent fields
+            boolean spawned = true;
+            for (Observation previousObservation : obsPrevious) {
+                if (previousObservation.obsID == currentObservation.obsID) {
+                    spawned = false;
+                    break;
+                }
+            }
+
+            // the observation did not exist on the field and the adjacent fields in the previous state.
+            // i.e. it could only be spawned.
+            if (spawned) {
+                // we only return one observation, as one spawner should only spawn one object in one timestep
+                return currentObservation;
+            }
+        }
+
+
+        ArrayList<Observation>
+    }
+
+    /**
+     * Checks every portal object if it has spawned something and what it has spawned.
+     * Therefore it checks the field of the portal itself for any objects which did not exist before.
+     * And it check the adjacent fields as well, as portals could spawn onto the adjacent fields.
+     */
+    private void learnSpawner(YoloState currentState, YoloState previousState) {
+        final ArrayList<Observation>[] portalObservationsArray = currentState.getPortalsPositions();
 
         for (ArrayList<Observation> portalObs : portalObservationsArray) {
             for (Observation portal : portalObs) {
+
+                int portalIndex = iType2Index(portal.itype);
+                if (spawnedNPCiTypes[portalIndex] != UNDEFINED || spawnedRessourceiTypes[portalIndex] != UNDEFINED) {
+                    // we assume that spawners do not change their spawned object type
+                    continue;
+                }
+
+                Observation spawnedIType = null;
                 Vector2d portalPos = portal.position;
-                int portalITypeIndex = iType2Index(portal.itype);
-                int[] previousMasks = new int[steps.length * steps.length];
-                int[] currentMasks = new int[steps.length * steps.length];
+                int x = (int) portalPos.x;
+                int y = (int) portalPos.y;
+
+                spawnedIType = findITypeSpawnedOnPosition(currentState, previousState, x, y);
+                if (spawnedIType != null) {
+                    setSpawnedIType(spawnedIType, portal.itype);
+                    continue;
+                }
 
 
-                for (int xStepIndex = 0; xStepIndex < steps.length; xStepIndex++) {
-                    for (int yStepIndex = 0; yStepIndex < steps.length; yStepIndex++) {
+                // step one to the left and one to the right or one up and one down
+                final int[] steps = new int[]{-1, 1};
+                // check the field "left" and "right" from the current field.
+                for (int xStep : steps) {
+                    int tempX = x + xStep;
 
-                        int x = (int) portalPos.x + steps[xStepIndex];
-                        int y = (int) portalPos.y + steps[yStepIndex];
-
-                        if (x < 0 || y < 0 || x > maxX || y > maxY) {
-                            continue;
-                        }
-
-                        previousMasks[xStepIndex + (yStepIndex * steps.length)] = previousSimpleState.getMask(x, y);
-                        currentMasks[xStepIndex + (yStepIndex * steps.length)] = currentSimpleState.getMask(x, y);
+                    spawnedIType = findITypeSpawnedOnPosition(currentState, previousState, tempX, y);
+                    if (spawnedIType != null) {
+                        setSpawnedIType(spawnedIType, portal.itype);
+                        continue;
                     }
                 }
 
-                int[] maskDiffs = new int[currentMasks.length];
-                int diffCount = 0;
-                for (int i = 0; i < currentMasks.length; i++) {
-                    maskDiffs[i] = currentMasks[i] ^ previousMasks[i];
-                    diffCount += Integer.bitCount(maskDiffs[i]);
-                }
+                // check the field "left" and "right" from the current field.
+                for (int yStep : steps) {
+                    int tempY = y + yStep;
 
-                // is das so richtig? wenn ein npc auf dem spawner stand und jetzt auf ein feld weiter läuft oder von außerhalb
-                // zufälligerweise auf das feld läuft wird er als spawn erkannt...
-                // vill doch über die Observations gehen?
-                // vill reicht es einfach sicherzustellen das das spawnerfeld keine observation "verloren" hat
-                // und das feld eins weiter außen auch nicht
-                // also beispiel: | X ist der NPC, S der Spawner, O ein leeres feld.
-                //  O
-                // OXS
-                //  O
-                // wir müssen nur prüfen, dass die 4 direkten Nachbarfelder (oben, rechts, unten, links) um das potentielle gespawnte Objekt keinen NPC verloren haben...
-                // da wir einfach mal behaupten ein NPC wäre maximal ein Feld gelaufen und er damit nur von einem der direkten Nachbarfelder kommen konnte, wenn er nicht gespawnt wurde.
-                // d.h. wir müssen um den Spawner die 4 Felder auf gespawnte Objekte testen und für jedes der Felder jeweils nochmal 4 Felder
-                // also 16 Tests.
-                // wir können aber nach dem ersten sicher gespawnten Objekt aufhören, da die anderen Felder falls was dazu gekommen ist nicht gespawnt sein können, da es nur ein Zeitschritt war.
-
-
-                // we found a spawned
-                if (diffCount == 1) {
-
-                }
-
-            }
-        }
-
-
-        int maxBefore = lastState.getMaxObsId();
-        if (maxBefore == -1) {
-            maxBefore = getMaxObsId(lastState);
-            lastState.setMaxObsId(maxBefore);
-        }
-
-        SimpleState simpleBefore = lastState.getSimpleState();
-        ArrayList<Observation> spawns = getObservationsWithIdBiggerThan(currentState, maxBefore);
-        int blockSize = currentState.getBlockSize();
-
-        for (Observation observation : spawns) {
-            byte index = itypeToIndex(observation.itype);
-            if (spawnedBy[index] != -1 && spawnerInfoSure[spawnedBy[index]])
-                continue;
-            int spawnX = (int) (observation.position.x / blockSize);
-            int spawnY = (int) (observation.position.y / blockSize);
-            int mask = simpleBefore.getMask(spawnX, spawnY);
-            byte spawnerItypeIndex = (byte) Integer.numberOfTrailingZeros(mask);
-            boolean onlyOneSpawnerPossible = Integer.numberOfLeadingZeros(mask) + spawnerItypeIndex == 31;
-            boolean isGoodGuess = false;
-            if (!onlyOneSpawnerPossible && positionAufSpielfeld(spawnX, spawnY)) {
-                //Suche Portals
-                ArrayList<Observation> obsList = lastState.getObservationGrid()[spawnX][spawnY];
-                int portalsCount = 0;
-                Observation lastPortal = null;
-                for (Observation possibleSpawnObs : obsList) {
-                    if (possibleSpawnObs.category == Types.TYPE_PORTAL) {
-                        portalsCount++;
-                        lastPortal = possibleSpawnObs;
-                        byte possibleSpawnItypeIndex = itypeToIndex(possibleSpawnObs.itype);
-                        if (spawnedBy[possibleSpawnItypeIndex] == -1) {
-                            spawnerItypeIndex = possibleSpawnItypeIndex;
-                            isGoodGuess = true;
-                            break;
-                        }
-                    }
-                }
-                if (!isGoodGuess && lastPortal != null && portalsCount == 1) {
-                    //No 'free' portal found, but only one --> choose this and override info!
-                    spawnerItypeIndex = itypeToIndex(lastPortal.itype);
-                    isGoodGuess = true;
-                }
-            }
-            if (onlyOneSpawnerPossible || isGoodGuess) {
-                //Only one bit is set (One itype only on this field)
-
-                //Check if something disappered next to spawn:
-                ArrayList<Observation> nearObservations = new ArrayList<Observation>();
-                ArrayList<Observation>[][] grid = lastState.getObservationGrid();
-                if (positionAufSpielfeld(spawnX - 1, spawnY))
-                    nearObservations.addAll(grid[spawnX - 1][spawnY]);
-                if (positionAufSpielfeld(spawnX + 1, spawnY))
-                    nearObservations.addAll(grid[spawnX + 1][spawnY]);
-                if (positionAufSpielfeld(spawnX, spawnY - 1))
-                    nearObservations.addAll(grid[spawnX][spawnY - 1]);
-                if (positionAufSpielfeld(spawnX, spawnY + 1))
-                    nearObservations.addAll(grid[spawnX][spawnY + 1]);
-
-                SimpleState simpleNow = currentState.getSimpleState();
-                boolean nothingGone = true;
-                for (Observation nearObs : nearObservations) {
-                    if (simpleNow.getObservationWithIdentifier(nearObs.obsID) == null)
-                        nothingGone = false;
-                }
-
-
-                if (nothingGone) {
-                    if (spawnerOf[spawnerItypeIndex] != index && spawnerInfoSure[spawnerItypeIndex]) {
-                        //Wir wissen, dass der spawner etwas anderes spawnt!
-                        //TODO: interaktion mit normalerweise gespawntem lernen!?
-                    } else {
-                        spawnerOf[spawnerItypeIndex] = index;
-                        spawnerInfoSure[spawnerItypeIndex] = onlyOneSpawnerPossible;
-                        spawnedBy[index] = spawnerItypeIndex;
-                        isDynamic[index] = true;
-                        isDynamic[spawnerItypeIndex] = true;
-                        dynamicMask = dynamicMask | 1 << index;
-                        dynamicMask = dynamicMask | 1 << spawnerItypeIndex;
+                    spawnedIType = findITypeSpawnedOnPosition(currentState, previousState, x, yStep);
+                    if (spawnedIType != null) {
+                        setSpawnedIType(spawnedIType, portal.itype);
+                        continue;
                     }
                 }
             }
         }
-
     }
 
     /**
