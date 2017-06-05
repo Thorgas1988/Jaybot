@@ -55,7 +55,7 @@ public class YoloKnowledge {
 
     private int[][] maxMoveInPixelPerNpcIType;
 
-    private RandomForest randomForestClassifier;
+    private PlayerEvent playerEventController;
 
 
     private YoloKnowledge() {
@@ -108,7 +108,7 @@ public class YoloKnowledge {
         // for every possible iType and for both axis (x and y)
         maxMoveInPixelPerNpcIType = new int[MAX_INDICES][2];
 
-        randomForestClassifier = new RandomForest(MAX_INDICES, 1000);
+        playerEventController = new PlayerEvent(MAX_INDICES);
     }
 
     public int iType2Index(int iType) {
@@ -216,17 +216,143 @@ public class YoloKnowledge {
         iTypeCategories[index] = category;
     }
 
-    public RandomForest getRandomForestClassifier() {
-        return randomForestClassifier;
+    public PlayerEvent getPlayerEventController() {
+        return playerEventController;
+    }
+
+
+    public boolean avatarLooksOutOfGame(YoloState state) {
+        final ArrayList<Observation>[][] grid = state.getObservationGrid();
+        final int MAX_X = grid.length - 1;
+        final int MAX_Y = grid[0].length - 1;
+
+        Vector2d orientation = state.getAvatarOrientation();
+
+        if(orientation.equals(ORIENTATION_NULL))
+            return false;
+        else if(orientation.equals(ORIENTATION_DOWN))
+            return state.getAvatarY() == MAX_Y;
+        else if(orientation.equals(ORIENTATION_UP))
+            return state.getAvatarY() == 0;
+        else if(orientation.equals(ORIENTATION_RIGHT))
+            return state.getAvatarX() == MAX_X;
+        else if(orientation.equals(ORIENTATION_DOWN))
+            return state.getAvatarX() == 0;
+
+        return false;
     }
 
     /**
-     * Learns knowledge from the transition of the previous state to the current.
+     * Returns a forest compatible (i.e. with the count of the conditions) inventory.
      *
-     * @param currentState  The current game state.
-     * @param previousState The previous game state
-     * @param actionDone    The action which was done to transition from the previous to the current state.
+     * @param state The YoloState to retrieve the inventory from.
+     * @return The inventory as byte array. if a iType was not available in the inventory it is stored with an amount of zero.
      */
+    public byte[] getInventoryArray(YoloState state) {
+        Map<Integer, Integer> inventory = state.getAvatarResources();
+        byte[] inventoryArray = new byte[MAX_INDICES];
+
+        for (int i = 0; i<inventoryArray.length; i++) {
+            Integer itemAmount = inventory.get(i);
+            if (itemAmount == null) {
+                inventoryArray[i] = 0;
+            } else {
+                inventoryArray[i] = itemAmount.byteValue();
+            }
+        }
+
+        return inventoryArray;
+    }
+
+    private boolean positionOnGrid(YoloState state, int x, int y) {
+        ArrayList<Observation>[][] grid = state.getObservationGrid();
+        return (x >= 0 && x < grid.length) && (y >= 0 && y < grid[0].length);
+    }
+
+    public boolean moveWillCancel(YoloState state, Types.ACTIONS action, boolean defeatIsCancel, boolean ignoreStochasticEnemyKilling) {
+
+        if(state.getAvatar() == null)
+            return true;
+
+        int avatarIndex = iType2Index(state.getAvatar().itype);
+        int x = state.getAvatarX();
+        int y = state.getAvatarY();
+        byte[] inventory = getInventoryArray(state);
+        boolean noMove = false;
+        Vector2d orientation = state.getAvatarOrientation();
+
+
+        switch (action) {
+            case ACTION_DOWN:
+                if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_DOWN))
+                    noMove = true;
+                y++;
+                break;
+            case ACTION_UP:
+                if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_UP))
+                    noMove = true;
+                y--;
+                break;
+            case ACTION_RIGHT:
+                if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_RIGHT))
+                    noMove = true;
+                x++;
+                break;
+            case ACTION_LEFT:
+                if(!orientation.equals(ORIENTATION_NULL) && !orientation.equals(ORIENTATION_LEFT))
+                    noMove = true;
+                x--;
+                break;
+            default:
+                //TODO: Action use auf singleton checken! Wenn schon geschossen, dann true!
+                noMove = true;
+        }
+
+        if(!positionOnGrid(state, x, y))
+            return true;	//Ziel ist nicht im Spielfeld!
+
+        //Check enemy:
+        if(!ignoreStochasticEnemyKilling && defeatIsCancel && canBeKilledByStochasticEnemyAt(state, x, y))
+            return true;
+        int mask = state.getSimpleState().getMask(x, y);
+
+        boolean surelyWillNotBlock = (blockingMaskTheorie[avatarIndex] & mask) == 0;
+
+        //Might Block, check PlayerEvents:
+        int playerIndex = iType2Index(state.getAvatar().itype);
+        for (Observation obs : state.getObservationGrid()[x][y]) {
+            int index = iType2Index(obs.itype);
+
+            //Bad-SpawnerCheck:
+            int iTypeOfSpawnedNpc = getSpawnedNpcIType(obs.itype);
+            if (iTypeOfSpawnedNpc != UNDEFINED) {
+                PlayerEvent spawnedPEvent = getPlayerEvent(	state.getAvatar().itype,
+                        indexToItype(iTypeIndexOfSpawner), true);
+                YoloEvent spawnedEvent = playerEventController.getEvent(state.getInventoryArray());
+                boolean isBadSpawner = spawnedEvent.getKill() || spawnedPEvent.getObserveCount() == 0;
+                if(isBadSpawner){
+                    return true;
+                }
+            }
+
+
+            if(activeObjectEffects[playerIndex][index] != null){
+                PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[playerIndex][index];
+                if(pEvent.getObserveCount() > 20 && (pEvent.willCancel(inventory) && !canInteractWithUse(avatarIndex,index)) || (killIsCancel && !canInteractWithUse(avatarIndex,index) && pEvent.getEvent(inventory).getKill()))
+                    return true;
+            }
+        }
+        //Nothing found that will block for sure, so guess action will work!
+        return false;
+    }
+
+        /**
+         * Learns knowledge from the transition of the previous state to the current.
+         *
+         * @param currentState  The current game state.
+         * @param previousState The previous game state
+         * @param actionDone    The action which was done to transition from the previous to the current state.
+         */
     public void learnFrom(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
 
         if (currentState == null || previousState == null || DEACTIVATE_LEARNING)
@@ -268,7 +394,7 @@ public class YoloKnowledge {
             // the player collided
             else {
                 // learn the collision event
-                Learner.learnCollisionEvent(currentState, previousState, actionDone);
+                Learner.learnCollisionEvent(currentState, previousState, actionDone, collider.passiveTypeId);
             }
         }
     }

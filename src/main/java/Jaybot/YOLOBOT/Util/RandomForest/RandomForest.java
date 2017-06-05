@@ -23,28 +23,28 @@ public class RandomForest {
         }
     }
 
-    public void train(byte[][] inventory, YoloEvent[] events) {
+    public void train(int colliderIType, byte[][] inventory, YoloEvent[] events) {
         if (inventory == null || events == null || inventory.length != events.length)
             throw new IllegalArgumentException("The inventory and event arrays have to be the same length");
 
         for (int i = 0; i < inventory.length; i++) {
-            train(inventory[i], events[i]);
+            train(colliderIType, inventory[i], events[i]);
         }
     }
 
-    public void train(byte[] inventory, YoloEvent event) {
+    public void train(int colliderIType, byte[] inventory, YoloEvent event) {
         for (RandomTree tree : forest) {
-            tree.train(inventory, event);
+            tree.train(colliderIType, inventory, event);
         }
     }
 
-    public YoloEvent getEvent(byte[] inventory) {
+    public YoloEvent getEvent(int colliderIType, byte[] inventory) {
         Map<YoloEvent, Integer> eventFrequencies = new HashMap<>();
         int maxFrequency = -1;
         YoloEvent maxYoloEvent = new YoloEvent();
 
         for (RandomTree tree : forest) {
-            YoloEvent event = tree.getEvent(inventory);
+            YoloEvent event = tree.getEvent(colliderIType, inventory);
 
             if (event == null)
                 continue;
@@ -77,30 +77,6 @@ public class RandomForest {
 
         sb.append("]}");
         return sb.toString();
-    }
-
-
-    /**
-     * Returns a forest compatible (i.e. with the count of the conditions) inventory.
-     * CAREFUL: Cuts off all inventoryItems with an index > the condition count.
-     *
-     * @param state The YoloState to retrieve the inventory from.
-     * @return The inventory as byte array. if a iType was not available in the inventory it is stored with an amount of zero.
-     */
-    public byte[] getInventoryArray(YoloState state) {
-        Map<Integer, Integer> inventory = state.getAvatarResources();
-        byte[] inventoryArray = new byte[treeSize];
-
-        for (int i = 0; i<inventoryArray.length; i++) {
-            Integer itemAmount = inventory.get(i);
-            if (itemAmount == null) {
-                inventoryArray[i] = 0;
-            } else {
-                inventoryArray[i] = itemAmount.byteValue();
-            }
-        }
-
-        return inventoryArray;
     }
 
     public RandomTree[] getTrees() {

@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 public class RandomTree {
 
     private final RandomCondition[] conditions;
-    private final Map<TreePath, Map<YoloEvent, Integer>> classes = new HashMap<>();
+    private final Map<Integer, ClassLabelMap> classes = new HashMap<>();
 
     public RandomTree(int treeSize) {
         conditions = new RandomCondition[treeSize];
@@ -34,41 +34,24 @@ public class RandomTree {
         return path;
     }
 
-    public YoloEvent getEvent(byte[] inventory) {
-        Map<YoloEvent, Integer> events = classes.get(getTreePath(inventory));
+    public YoloEvent getEvent(int colliderIType, byte[] inventory) {
+        ClassLabelMap classLabels = classes.get(colliderIType);
 
-        if (events == null) {
-            return null;
+        if (classLabels == null) {
+            return new YoloEvent();
         }
 
-        int max = Integer.MIN_VALUE;
-        YoloEvent resultEvent = null;
-
-        for (Entry<YoloEvent, Integer> entry : events.entrySet()) {
-            if (max < entry.getValue().intValue()) {
-                max = entry.getValue().intValue();
-                resultEvent = entry.getKey();
-            }
-        }
-
-        return resultEvent;
+        return classLabels.getEvent(getTreePath(inventory));
     }
 
-    public void train(byte[] inventory, YoloEvent event) {
-        TreePath path = getTreePath(inventory);
-        Map<YoloEvent, Integer> events = classes.get(path);
+    public void train(int colliderIType, byte[] inventory, YoloEvent event) {
+        ClassLabelMap classLabels = classes.get(colliderIType);
 
-        if (events == null) {
-            events = new HashMap<>();
-            events.put(event, 1);
-            classes.put(path, events);
-        } else {
-            int frequency = 0;
-            if (events.containsKey(event)) {
-                frequency = events.get(event);
-            }
-            events.put(event, frequency + 1);
+        if (classLabels == null) {
+            classLabels = new ClassLabelMap();
         }
+
+        classLabels.put(getTreePath(inventory), event);
     }
 
     @Override
@@ -80,19 +63,4 @@ public class RandomTree {
 
         return sb.toString();
     }
-
-    public String printTrainedTree() {
-        StringBuilder sb = new StringBuilder();
-
-        for (Entry<TreePath, Map<YoloEvent, Integer>> entry : classes.entrySet()) {
-            sb.append(entry.getKey().toString());
-            sb.append("\n");
-            for (Entry<YoloEvent, Integer> events : entry.getValue().entrySet()) {
-                sb.append(events.getValue()).append("x ").append(events.getKey().toString()).append("\n");
-            }
-        }
-
-        return sb.toString();
-    }
-
 }

@@ -736,7 +736,7 @@ public class YoloState {
 	public byte[] getInventoryArray() {
 		if (_inventoryArray == null) {
 			getAvatarResources();
-			_inventoryArray = YoloKnowledge.getInstance().getInventoryArray(_avatarResources, getHP());
+			_inventoryArray = YoloKnowledge.getInstance().getInventoryArray(this);
 			// ? Why HP, in the function in YoloKnowledge HP value is also not used
 			_inventoryArrayUsageSize = _avatarResources.keySet().size();
 		}

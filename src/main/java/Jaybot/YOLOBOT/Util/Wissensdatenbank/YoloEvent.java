@@ -29,7 +29,7 @@ public class YoloEvent {
     private int removeInventorySlot = UNDEFINED;
 
 
-    private YoloEvent() {
+    public YoloEvent() {
     }
 
     // Only needed for the random forest unit tests

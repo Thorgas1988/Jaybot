@@ -16,8 +16,8 @@ public class PlayerEvent implements YoloEventController {
      * Constructor:
      * Initialize all member variables. Int to 0, new class instance.
      */
-    public PlayerEvent() {
-        randomForest = new RandomForest(10, 1000);
+    public PlayerEvent(int maxIndices) {
+        randomForest = new RandomForest(maxIndices, 1000);
     }
 
     /**
@@ -41,7 +41,7 @@ public class PlayerEvent implements YoloEventController {
      * @param addInventory    change of the avatar inventory
      * @param removeInventory change of the avatar inventory
      */
-    public void learnEventHappened(byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
+    public void learnEventHappened(int colliderIType, byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
         YoloEvent event = new YoloEvent();
         event.setNewIType(newItype);
         event.setAddInventorySlotItem(addInventory);
@@ -53,7 +53,11 @@ public class PlayerEvent implements YoloEventController {
         event.setTeleportTo(teleportTo);
         event.setVictory(winGame);
 
-        randomForest.train(inventoryItems, event);
+        randomForest.train(colliderIType, inventoryItems, event);
+    }
+
+    public void learnEventHappened(int colliderIType, byte[] inventoryItems, YoloEvent event) {
+        randomForest.train(colliderIType, inventoryItems, event);
     }
 
     /**

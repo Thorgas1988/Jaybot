@@ -21,14 +21,14 @@ public class Learner {
     /**
      * Learns collision events (YoloEvent)
      */
-    public static void learnCollisionEvent(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
+    public static void learnCollisionEvent(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone, int colliderIType) {
         final YoloKnowledge knowledge = YoloKnowledge.getInstance();
         // get the inventory of the current state
-        byte[] inventory = knowledge.getRandomForestClassifier().getInventoryArray(currentState);
+        byte[] inventory = knowledge.getInventoryArray(currentState);
         // create the YoloEvent 2 learn
         YoloEvent event2Learn = YoloEvent.create(currentState, previousState, actionDone, inventory);
         // train the random forest with the YoloEvent
-        knowledge.getRandomForestClassifier().train(inventory, event2Learn);
+        knowledge.getPlayerEventController().learnEventHappened(colliderIType, inventory, event2Learn);
     }
 
     /**
