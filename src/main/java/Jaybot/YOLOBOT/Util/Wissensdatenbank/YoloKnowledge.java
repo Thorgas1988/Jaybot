@@ -20,7 +20,7 @@ public class YoloKnowledge {
     public static int UNDEFINED = YoloEvent.UNDEFINED;
 
     private static final double SQRT_2 = Math.sqrt(2.0);
-    private static final int MAX_INDICES = 32;
+    public static final int MAX_INDICES = 32;
     private static final int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
     private static final int STOCHASTIC_ITERATIONS_COUNT = 10;
     private static final int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
@@ -111,7 +111,7 @@ public class YoloKnowledge {
         randomForestClassifier = new RandomForest(MAX_INDICES, 1000);
     }
 
-    private int iType2Index(int iType) {
+    public int iType2Index(int iType) {
         if (iType2IndexMap[iType] == UNDEFINED) {
             iType2IndexMap[iType] = currentITypeIndex;
             currentITypeIndex++;

@@ -212,7 +212,7 @@ public class YoloState {
 	public YoloState copyAdvanceLearn(ACTIONS action) {
 		YoloState advancedState = copy();
 		advancedState.advance(action);
-		YoloKnowledge.instance.learnFrom(advancedState, this, action);
+		YoloKnowledge.getInstance().learnFrom(advancedState, this, action);
 		return advancedState;
 	}
 
@@ -268,7 +268,7 @@ public class YoloState {
 		if (_availableActions == null){
 			_availableActions = _stateObservation.getAvailableActions();
 
-			if(_availableActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.avatarLooksOutOfGame(this))
+			if(_availableActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.getInstance().avatarLooksOutOfGame(this))
 				_availableActions.remove(ACTIONS.ACTION_USE);
 		}
 		return _availableActions;
@@ -276,7 +276,7 @@ public class YoloState {
 	public ArrayList<ACTIONS> getAvailableActions(boolean includeNil) {
 		if (_availableActionsIncludeNil == null){
 			_availableActionsIncludeNil = _stateObservation.getAvailableActions(includeNil);
-			if(_availableActionsIncludeNil.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.avatarLooksOutOfGame(this))
+			if(_availableActionsIncludeNil.contains(ACTIONS.ACTION_USE) && YoloKnowledge.getInstance().avatarLooksOutOfGame(this))
 				_availableActionsIncludeNil.remove(ACTIONS.ACTION_USE);
 		}
 		return _availableActionsIncludeNil;
@@ -609,7 +609,7 @@ public class YoloState {
 				.hasNext();) {
 			ACTIONS actions = (ACTIONS) iterator.next();
 			// TODO: stehen bleiben check -> kill?
-			if (YoloKnowledge.instance.moveWillCancel(this, actions, true,
+			if (YoloKnowledge.getInstance().moveWillCancel(this, actions, true,
 					ignoreStochasticEnemyKilling)) {
 				iterator.remove();
 			}
@@ -736,7 +736,7 @@ public class YoloState {
 	public byte[] getInventoryArray() {
 		if (_inventoryArray == null) {
 			getAvatarResources();
-			_inventoryArray = YoloKnowledge.instance.getInventoryArray(_avatarResources, getHP());
+			_inventoryArray = YoloKnowledge.getInstance().getInventoryArray(_avatarResources, getHP());
 			// ? Why HP, in the function in YoloKnowledge HP value is also not used
 			_inventoryArrayUsageSize = _avatarResources.keySet().size();
 		}

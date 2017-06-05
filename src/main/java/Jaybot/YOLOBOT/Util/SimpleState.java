@@ -32,7 +32,7 @@ public class SimpleState {
 		ArrayList<Observation>[][] grid = stateObservation.getObservationGrid();
 		state = new int[grid.length][grid[0].length];
 		identifiersSeen = new HashMap<Integer, Observation>();
-		itypeOccurenceCount = new int[YoloKnowledge.INDEX_MAX];
+		itypeOccurenceCount = new int[YoloKnowledge.MAX_INDICES];
 		fullInited = false;
 		
 		if(initComplete){
@@ -75,10 +75,10 @@ public class SimpleState {
 			return;
 		}
 		for (Observation obs : referenceState.getObservationGrid()[x][y]) {
-			state[x][y] = state[x][y] | 1 << YoloKnowledge.instance.itypeToIndex(obs.itype);
+			state[x][y] = state[x][y] | 1 << YoloKnowledge.getInstance().iType2Index(obs.itype);
 			if(!identifiersSeen.containsKey(obs.obsID)){
 				if(itypeOccurenceCount != null)
-					itypeOccurenceCount[YoloKnowledge.instance.itypeToIndex(obs.itype)]++;
+					itypeOccurenceCount[YoloKnowledge.getInstance().iType2Index(obs.itype)]++;
 				identifiersSeen.put(obs.obsID, obs);
 			}
 		}
