@@ -269,7 +269,7 @@ public class YoloKnowledge {
         return (x >= 0 && x < grid.length) && (y >= 0 && y < grid[0].length);
     }
 
-    public boolean moveWillCancel(YoloState state, Types.ACTIONS action, boolean defeatIsCancel, boolean ignoreStochasticEnemyKilling) {
+    public boolean moveWillCancel(YoloState state, Types.ACTIONS action, boolean defeatIsCancel, boolean ignoreDefeatByStochasticEnemy) {
 
         if(state.getAvatar() == null)
             return true;
@@ -308,11 +308,12 @@ public class YoloKnowledge {
                 noMove = true;
         }
 
+        // Target is not on the grid
         if(!positionOnGrid(state, x, y))
-            return true;	//Ziel ist nicht im Spielfeld!
+            return true;
 
         //Check enemy:
-        if(!ignoreStochasticEnemyKilling && defeatIsCancel && canBeKilledByStochasticEnemyAt(state, x, y))
+        if(!ignoreDefeatByStochasticEnemy && defeatIsCancel && canBeKilledByStochasticEnemyAt(state, x, y))
             return true;
         int mask = state.getSimpleState().getMask(x, y);
 
@@ -338,7 +339,7 @@ public class YoloKnowledge {
 
             if(activeObjectEffects[playerIndex][index] != null){
                 PlayerEvent pEvent = (PlayerEvent) activeObjectEffects[playerIndex][index];
-                if(pEvent.getObserveCount() > 20 && (pEvent.willCancel(inventory) && !canInteractWithUse(avatarIndex,index)) || (killIsCancel && !canInteractWithUse(avatarIndex,index) && pEvent.getEvent(inventory).getKill()))
+                if(pEvent.getObserveCount() > 20 && (pEvent.willCancel(inventory) && !canInteractWithUse(avatarIndex,index)) || (defeatIsCancel && !canInteractWithUse(avatarIndex,index) && pEvent.getEvent(inventory).getKill()))
                     return true;
             }
         }
@@ -346,13 +347,53 @@ public class YoloKnowledge {
         return false;
     }
 
-        /**
-         * Learns knowledge from the transition of the previous state to the current.
-         *
-         * @param currentState  The current game state.
-         * @param previousState The previous game state
-         * @param actionDone    The action which was done to transition from the previous to the current state.
-         */
+
+
+
+    public Observation canBeKilledByEnemyNearby(YoloState currentState, int x, int y, boolean ignoreTicks)
+    {
+        ArrayList<Observation>[][] grid = currentState.getObservationGrid();
+        if(positionOnGrid(currentState, x, y)) {
+            ArrayList<Observation> observations = grid[x][y];
+            for (Observation observation : observations) {
+                int obsIndex = iType2Index(observation.itype);
+                
+                if (isContinuousMovingEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, currentState.getGameTick())))
+                {
+                    //stochastic enemy at testing field, but how near is he to avatar?
+                    int halfBlock = currentState.getBlockSize()/2;
+
+
+                    Vector2d enemyPosition = observation.position;
+                    Vector2d avatarPosition = currentState.getAvatarPosition();
+                    double ePosX = enemyPosition.x+ halfBlock;
+                    double ePosY = enemyPosition.y+ halfBlock;
+                    double aPosX = avatarPosition.x+ halfBlock;
+                    double aPosY = avatarPosition.y+ halfBlock;
+
+                    Vector2d diffVec = new Vector2d(ePosX - aPosX, ePosY - aPosY);
+                    double diff = diffVec.dist(diffVec);
+                    double diffBlocks = diff / currentState.getBlockSize();
+
+                    if (diffBlocks < 2.0)
+                    {
+                        System.out.println("Enemy nearby. Diff:"+diff+", enemyPos x|y:"+enemyPosition.x+"|"+enemyPosition.y+", avatarPos x|y"+avatarPosition.x+"|"+avatarPosition.y);
+                        //enemy is nearby, could kill avatar!!
+                        return observation;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Learns knowledge from the transition of the previous state to the current.
+     *
+     * @param currentState  The current game state.
+     * @param previousState The previous game state
+     * @param actionDone    The action which was done to transition from the previous to the current state.
+     */
     public void learnFrom(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
 
         if (currentState == null || previousState == null || DEACTIVATE_LEARNING)
