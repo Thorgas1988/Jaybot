@@ -2,7 +2,7 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
-import Jaybot.YOLOBOT.Util.SimpleState;
+import Jaybot.YOLOBOT.Util.Wissensdatenbank.Helper.Learner;
 import Jaybot.YOLOBOT.YoloState;
 import core.game.Event;
 import core.game.Observation;
@@ -24,6 +24,8 @@ public class YoloKnowledge {
     private static final int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
     private static final int STOCHASTIC_ITERATIONS_COUNT = 10;
     private static final int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
+    public static final int AXIS_X = 0;
+    public static final int AXIS_Y = 1;
 
     private static YoloKnowledge instance = null;
 
@@ -47,12 +49,10 @@ public class YoloKnowledge {
 
     private int[] iTypeCategories;
 
-    private boolean hasScoreWithoutWinning;
+    private boolean scoreWithoutWinning;
 
     private PlayerUseEvent[][] useEffects;
 
-    private static final int AXIS_X = 0;
-    private static final int AXIS_Y = 1;
     private int[][] maxMoveInPixelPerNpcIType;
 
     private RandomForest randomForestClassifier;
@@ -81,7 +81,7 @@ public class YoloKnowledge {
     /**
      * Resets the YoloKnowledge base.
      */
-    public void reset() {
+    private void reset() {
         currentITypeIndex = 0;
         iType2IndexMap = new int[Byte.MAX_VALUE];
         for (int i = 0; i < iType2IndexMap.length; i++) {
@@ -92,10 +92,17 @@ public class YoloKnowledge {
         isStochasticEnemy = new boolean[MAX_INDICES];
         playerITypeMask = 0;
         dynamicMask = 0;
+
         spawnedNPCiTypes = new int[MAX_INDICES];
         spawnedRessourceiTypes = new int[MAX_INDICES];
+        for (int i=0; i<MAX_INDICES; i++) {
+            spawnedNPCiTypes[i] = UNDEFINED;
+            spawnedRessourceiTypes[i] = UNDEFINED;
+        }
+
+
         iTypeCategories = new int[MAX_INDICES];
-        hasScoreWithoutWinning = false;
+        scoreWithoutWinning = false;
 
         useEffects = new PlayerUseEvent[MAX_INDICES][MAX_INDICES];
         // for every possible iType and for both axis (x and y)
@@ -124,11 +131,94 @@ public class YoloKnowledge {
     /**
      * Stores the given iType in the player mask. This allows to identify the iType as the player.
      */
-    public void storePlayerIType(int iType) {
+    private void storePlayerIType(int iType) {
         int index = iType2Index(iType);
         playerITypeMask = playerITypeMask | (1 << index);
     }
 
+    public boolean isDynamic(int iType) {
+        int index = iType2Index(iType);
+        return (dynamicMask & (1 << index)) > 0;
+    }
+
+    public void storeDynamicIType(int iType) {
+        int index = iType2Index(iType);
+        dynamicMask = dynamicMask | (1 << index);
+    }
+
+    public void storeSpawnedIType(Observation spawnedIType, int portalIType) {
+        int portalIndex = iType2Index(portalIType);
+
+        if (spawnedIType.category == Types.TYPE_NPC) {
+            spawnedNPCiTypes[portalIndex] = spawnedIType.itype;
+            return;
+        }
+
+        if (spawnedIType.category == Types.TYPE_RESOURCE) {
+            spawnedRessourceiTypes[portalIndex] = spawnedIType.itype;
+        }
+    }
+
+    public int getSpawnedNpcIType(int portalIType) {
+        int index = iType2Index(portalIType);
+        return spawnedNPCiTypes[index];
+    }
+
+    public int getSpawnedRessourceIType(int portalIType) {
+        int index = iType2Index(portalIType);
+        return spawnedRessourceiTypes[index];
+    }
+
+    public void storeMaxMoveInPixelPerNpcIType(int iType, int axis, int maxMove) {
+        int index = iType2Index(iType);
+        maxMoveInPixelPerNpcIType[index][axis] = maxMove;
+    }
+
+    public int[] getMaxMoveInPixelPerNpcIType(int iType) {
+        int index = iType2Index(iType);
+        return maxMoveInPixelPerNpcIType[index];
+    }
+
+    public int getMaxMoveInPixelPerNpcIType(int iType, int axis) {
+        int index = iType2Index(iType);
+        return maxMoveInPixelPerNpcIType[index][axis];
+    }
+
+    public PlayerUseEvent getUseEffect(int playerIType, int otherIType) {
+        int playerIndex = iType2Index(playerIType);
+        int otherIndex = iType2Index(otherIType);
+
+        return useEffects[playerIndex][otherIndex];
+    }
+
+    public void storeUseEffect(int playerIType, int otherIType, PlayerUseEvent useEffect) {
+        int playerIndex = iType2Index(playerIType);
+        int otherIndex = iType2Index(otherIType);
+
+        useEffects[playerIndex][otherIndex] = useEffect;
+    }
+
+    public boolean hasScoreWithoutWinning() {
+        return scoreWithoutWinning;
+    }
+
+    public void setScoreWithoutWinning(boolean scoreWithoutWinning) {
+        this.scoreWithoutWinning = scoreWithoutWinning;
+    }
+
+    public int getITypeCategory(int iType) {
+        int index = iType2Index(iType);
+        return iTypeCategories[index];
+    }
+
+    private void storeITypeCategory(int iType, int category) {
+        int index = iType2Index(iType);
+        iTypeCategories[index] = category;
+    }
+
+    public RandomForest getRandomForestClassifier() {
+        return randomForestClassifier;
+    }
 
     /**
      * Learns knowledge from the transition of the previous state to the current.
@@ -149,8 +239,9 @@ public class YoloKnowledge {
         }
 
         // learn general game information
-        learnNpcMovementRange(currentState, previousState);
-        learnSpawner(currentState, previousState);
+        Learner.learnNpcMovementRange(currentState, previousState);
+        Learner.learnSpawner(currentState, previousState);
+        Learner.learnDynamicObjects(currentState, previousState);
 
         // learn collision events
         TreeSet<core.game.Event> history = currentState.getEventsHistory();
@@ -161,7 +252,6 @@ public class YoloKnowledge {
                 break;
             }
 
-            int passiveItype = collider.passiveTypeId;
             int activeItype = collider.activeTypeId;
 
             // if the active iType is no known player iType
@@ -173,257 +263,12 @@ public class YoloKnowledge {
             // was the collision provoked by a sprite created from the player
             if (!collider.fromAvatar) {
                 // learn the use event
-                learnUseEvent(currentState, previousState, collider);
+                Learner.learnUseEvent(currentState, previousState, collider);
             }
             // the player collided
             else {
                 // learn the collision event
-                learnCollisionEvent(currentState, previousState, actionDone);
-            }
-        }
-    }
-
-    private void setSpawnedIType(Observation spawnedIType, int portalIType) {
-        int portalIndex = iType2Index(portalIType);
-
-        if (spawnedIType.category == Types.TYPE_NPC) {
-            spawnedNPCiTypes[portalIndex] = spawnedIType.itype;
-            return;
-        }
-
-        if (spawnedIType.category == Types.TYPE_RESOURCE) {
-            spawnedRessourceiTypes[portalIndex] = spawnedIType.itype;
-        }
-    }
-
-    private List<Observation> getAdjacentObservations(YoloState state, int x, int y) {
-        final List<Observation> result = new LinkedList<>();
-        final ArrayList<Observation>[][] grid = state.getObservationGrid()[][];
-        final int xMax = grid.length;
-        final int yMax = grid[0].length;
-
-        // step one to the left and one to the right or one up and one down
-        final int[] steps = new int[]{-1, 1};
-
-        // check the field "left" and "right" from the current field.
-        for (int xStep : steps) {
-            int tempX = x + xStep;
-
-            if (tempX < 0 || tempX > xMax) {
-                continue;
-            }
-
-            result.addAll(grid[tempX][y]);
-        }
-
-        // check the field "above" and "under" the current field.
-        for (int yStep : steps) {
-            int tempY = y + yStep;
-
-            if (tempY < 0 || tempY > xMax) {
-                continue;
-            }
-
-            result.addAll(grid[x][tempY]);
-        }
-    }
-
-    private Observation findITypeSpawnedOnPosition(YoloState currentState, YoloState previousState, int x, int y) {
-        ArrayList<Observation> spawnedCanidates = new ArrayList<>();
-        ArrayList<Observation> obsCurrent = currentState.getObservationGrid()[x][y];
-
-        // Add the observations of the previous state from the "searched" field
-        List<Observation> obsPrevious = new LinkedList<>(previousState.getObservationGrid()[x][y]);
-
-        for (Observation currentObservation : obsCurrent) {
-            if (! (currentObservation.category == Types.TYPE_NPC || currentObservation.category == Types.TYPE_RESOURCE)) {
-                continue;
-            }
-
-            // add all observations of adjacent fields
-            obsPrevious.addAll(getAdjacentObservations(previousState, x, y));
-
-            // check if the currentObservation did exist in the previous state either
-            // on the searched field or on adjacent fields
-            boolean spawned = true;
-            for (Observation previousObservation : obsPrevious) {
-                if (previousObservation.obsID == currentObservation.obsID) {
-                    spawned = false;
-                    break;
-                }
-            }
-
-            // the observation did not exist on the field and the adjacent fields in the previous state.
-            // i.e. it could only be spawned.
-            if (spawned) {
-                // we only return one observation, as one spawner should only spawn one object in one timestep
-                return currentObservation;
-            }
-        }
-
-
-        ArrayList<Observation>
-    }
-
-    /**
-     * Checks every portal object if it has spawned something and what it has spawned.
-     * Therefore it checks the field of the portal itself for any objects which did not exist before.
-     * And it check the adjacent fields as well, as portals could spawn onto the adjacent fields.
-     */
-    private void learnSpawner(YoloState currentState, YoloState previousState) {
-        final ArrayList<Observation>[] portalObservationsArray = currentState.getPortalsPositions();
-
-        for (ArrayList<Observation> portalObs : portalObservationsArray) {
-            for (Observation portal : portalObs) {
-
-                int portalIndex = iType2Index(portal.itype);
-                if (spawnedNPCiTypes[portalIndex] != UNDEFINED || spawnedRessourceiTypes[portalIndex] != UNDEFINED) {
-                    // we assume that spawners do not change their spawned object type
-                    continue;
-                }
-
-                Observation spawnedIType = null;
-                Vector2d portalPos = portal.position;
-                int x = (int) portalPos.x;
-                int y = (int) portalPos.y;
-
-                spawnedIType = findITypeSpawnedOnPosition(currentState, previousState, x, y);
-                if (spawnedIType != null) {
-                    setSpawnedIType(spawnedIType, portal.itype);
-                    continue;
-                }
-
-
-                // step one to the left and one to the right or one up and one down
-                final int[] steps = new int[]{-1, 1};
-                // check the field "left" and "right" from the current field.
-                for (int xStep : steps) {
-                    int tempX = x + xStep;
-
-                    spawnedIType = findITypeSpawnedOnPosition(currentState, previousState, tempX, y);
-                    if (spawnedIType != null) {
-                        setSpawnedIType(spawnedIType, portal.itype);
-                        continue;
-                    }
-                }
-
-                // check the field "left" and "right" from the current field.
-                for (int yStep : steps) {
-                    int tempY = y + yStep;
-
-                    spawnedIType = findITypeSpawnedOnPosition(currentState, previousState, x, yStep);
-                    if (spawnedIType != null) {
-                        setSpawnedIType(spawnedIType, portal.itype);
-                        continue;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Learns how far (maximum) a NPCs can walk/travel in one gametick.
-     */
-    private void learnNpcMovementRange(YoloState currentState, YoloState previousState) {
-        ArrayList<Observation>[] previousNpcs = previousState.getNpcPositions();
-        ArrayList<Observation>[] currentNpcs = currentState.getNpcPositions();
-        Map<Integer, Observation> previousObservationMap = new HashMap<>();
-
-        for (ArrayList<Observation> previousObservations : previousNpcs) {
-            for (Observation o : previousObservations) {
-                previousObservationMap.put(o.obsID, o);
-            }
-        }
-
-        for (ArrayList<Observation> currentObservations : currentNpcs) {
-            for (Observation currentObs : currentObservations) {
-                Observation previousObs = previousObservationMap.get(currentObs.obsID);
-
-                if (previousObs == null)
-                    continue;
-
-                int iTypeIndex = currentObs.itype;
-
-                Vector2d currentPos = currentObs.position;
-                Vector2d previousPos = previousObs.position;
-
-                int moveX = (int) Math.abs(currentPos.x - previousPos.x);
-                int moveY = (int) Math.abs(currentPos.y - previousPos.y);
-
-                if (moveX > maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_X]) {
-                    maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_X] = moveX;
-                }
-
-                if (moveY > maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_Y]) {
-                    maxMoveInPixelPerNpcIType[iTypeIndex][AXIS_Y] = moveY;
-                }
-            }
-        }
-    }
-
-    /**
-     * Learns collision events (YoloEvent)
-     */
-    private void learnCollisionEvent(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone) {
-        // get the inventory of the current state
-        byte[] inventory = randomForestClassifier.getInventoryArray(currentState);
-        // create the YoloEvent 2 learn
-        YoloEvent event2Learn = YoloEvent.create(currentState, previousState, actionDone, inventory);
-        // train the random forest with the YoloEvent
-        randomForestClassifier.train(inventory, event2Learn);
-    }
-
-    /**
-     * Learns use events occured because of a collision from the player created projectile with another object.
-     */
-    private void learnUseEvent(YoloState currentState, YoloState lastState,
-                               Event collider) {
-
-        if (!Agent.UPLOAD_VERSION)
-            System.out.println("Learn Use Event: " + collider.activeSpriteId + " -> " + collider.passiveSpriteId);
-
-        int otherITypeIndex = iType2Index(collider.passiveTypeId);
-        int playerObjITypeIndex = iType2Index(collider.activeTypeId);
-        boolean wall = currentState.getSimpleState().getObservationWithIdentifier(collider.passiveSpriteId) != null;
-
-        if (useEffects[playerObjITypeIndex][otherITypeIndex] == null) {
-            useEffects[playerObjITypeIndex][otherITypeIndex] = new PlayerUseEvent();
-        }
-
-        PlayerUseEvent uEvent = useEffects[playerObjITypeIndex][otherITypeIndex];
-        byte deltaScore = (byte) (currentState.getGameScore() - lastState.getGameScore());
-
-        if (!hasScoreWithoutWinning && deltaScore > 0 && !currentState.isGameOver())
-            hasScoreWithoutWinning = true;
-
-        uEvent.learnTriggerEvent(deltaScore, wall);
-    }
-
-    /**
-     * Learns the categories of iTypes
-     */
-    public void learnObjectCategories(YoloState state) {
-        learnObjectCategories(state.getImmovablePositions());
-        learnObjectCategories(state.getFromAvatarSpritesPositions());
-        learnObjectCategories(state.getMovablePositions());
-        learnObjectCategories(state.getNpcPositions());
-        learnObjectCategories(state.getPortalsPositions());
-        learnObjectCategories(state.getResourcesPositions());
-    }
-
-    private void learnObjectCategories(ArrayList<Observation>[] list) {
-        if (list == null)
-            return;
-        for (ArrayList<Observation> observationList : list) {
-            if (observationList != null && !observationList.isEmpty()) {
-                Observation obs = observationList.get(0);
-                int iTypeIndex = iType2Index(obs.itype);
-                iTypeCategories[iTypeIndex] = obs.category;
-
-                if (obs.category == Types.TYPE_NPC) {
-                    dynamicMask = dynamicMask | (1 << iTypeIndex);
-                }
-
+                Learner.learnCollisionEvent(currentState, previousState, actionDone);
             }
         }
     }
@@ -445,18 +290,18 @@ public class YoloKnowledge {
         for (int posIndex = 0; posIndex < states.length; posIndex++) {
 
             // get the npc Positions of the current state
-            ArrayList<Observation>[] currentStateNpcPos = states[posIndex].getNpcPositions();
+            List<Observation>[] currentStateNpcPos = states[posIndex].getNpcPositions();
             if (currentStateNpcPos == null) {
                 return;
             }
 
             // for every npc of the current state
-            for (int npcNr = 0; npcNr < currentStateNpcPos.length; npcNr++) {
-                if (currentStateNpcPos[npcNr] == null || currentStateNpcPos[npcNr].isEmpty()) {
+            for (List<Observation> observations : currentStateNpcPos) {
+                if (observations == null || observations.isEmpty()) {
                     continue;
                 }
 
-                Observation obs = currentStateNpcPos[npcNr].get(0);
+                Observation obs = observations.get(0);
                 int iTypeIndex = iType2Index(obs.itype);
                 positions[iTypeIndex][posIndex] = obs.position;
             }
@@ -483,7 +328,7 @@ public class YoloKnowledge {
      * Learns stochastic moving NPCs
      */
     private void learnStochasticEffects(YoloState state) {
-        Map<Integer, Vector2d> positions = new HashMap<Integer, Vector2d>();
+        Map<Integer, Vector2d> positions = new HashMap<>();
         int stochasticNpcCount = 0;
 
         if (state.getNpcPositions() == null || state.getNpcPositions().length == 0)
@@ -501,23 +346,26 @@ public class YoloKnowledge {
                 break;
             }
 
-            for (int npcNr = 0; npcNr < nextStateNPCs.length; npcNr++) {
+            if (nextStateNPCs == null) {
+                continue;
+            }
+
+            for (ArrayList<Observation> npcs : nextStateNPCs) {
 
                 // do we even have something to do here?
-                if (nextStateNPCs[npcNr] == null || nextStateNPCs[npcNr].isEmpty()) {
+                if (npcs == null || npcs.isEmpty()) {
                     continue;
                 }
 
 
                 // Check if this NPC was not recognized as stochastic before
-                int iTypeIndex = iType2Index(nextStateNPCs[npcNr].get(0).itype);
+                int iTypeIndex = iType2Index(npcs.get(0).itype);
                 if (!isStochasticEnemy[iTypeIndex]) {
 
                     // was not recognized as stochastic before, then check the position.
                     // if it is not stochastic all observation position of this iType should be the same position
                     // over all iterations
-                    for (int i = 0; i < nextStateNPCs[npcNr].size(); i++) {
-                        Observation obs = nextStateNPCs[npcNr].get(i);
+                    for (Observation obs : npcs) {
                         Vector2d referencePos = positions.get(obs.obsID);
 
                         // store the reference position if it was not stored before
@@ -550,5 +398,36 @@ public class YoloKnowledge {
 
         if (!Agent.UPLOAD_VERSION)
             System.out.println("Stochastische NPCs: " + stochasticNpcCount);
+    }
+
+    /**
+     * Learns the categories of iTypes
+     */
+    public static void learnObjectCategories(YoloState state) {
+        learnObjectCategories(state.getImmovablePositions());
+        learnObjectCategories(state.getFromAvatarSpritesPositions());
+        learnObjectCategories(state.getMovablePositions());
+        learnObjectCategories(state.getNpcPositions());
+        learnObjectCategories(state.getPortalsPositions());
+        learnObjectCategories(state.getResourcesPositions());
+    }
+
+    private static void learnObjectCategories(ArrayList<Observation>[] list) {
+        YoloKnowledge knowledge = YoloKnowledge.getInstance();
+
+        if (list == null)
+            return;
+
+        for (ArrayList<Observation> observationList : list) {
+            if (observationList != null && !observationList.isEmpty()) {
+                Observation obs = observationList.get(0);
+
+                knowledge.storeITypeCategory(obs.itype, obs.category);
+
+                if (obs.category == Types.TYPE_NPC) {
+                    knowledge.storeDynamicIType(obs.itype);
+                }
+            }
+        }
     }
 }
