@@ -60,8 +60,8 @@ public class OneDimensionMoveToMedianHeuristic extends IHeuristic {
 	public double calculateMedian(YoloState ys) {
 		ArrayList<Integer> dynamic = new ArrayList<Integer>();
 		for (int i = 0; i < 32; i++) {
-			if(YoloKnowledge.instance.isDynamic(i)){
-				dynamic.add(YoloKnowledge.instance.indexToItype(i));
+			if(YoloKnowledge.getInstance().isDynamic(i)){
+				dynamic.add(YoloKnowledge.getInstance().indexToItype(i));
 			}
 		}
 		int nearestDistance = Integer.MAX_VALUE;
@@ -146,7 +146,7 @@ public class OneDimensionMoveToMedianHeuristic extends IHeuristic {
 		boolean isUninteresting = false;
 		
 		//Kills me and is no score:
-		isUninteresting |= YoloKnowledge.instance.getPlayerEvent(ys.getAvatar().itype, observation.itype, true).getEvent(ys.getInventoryArray()).isDefeat() & !YoloKnowledge.instance.getIncreaseScoreIfInteractWith(ys.getAvatar().itype, observation.itype);
+		isUninteresting |= YoloKnowledge.getInstance().getPlayerEventController().getEvent(ys.getInventoryArray()).isDefeat() & !YoloKnowledge.getInstance().getIncreaseScoreIfInteractWith(ys.getAvatar().itype, observation.itype);
 		
 		return isUninteresting;
 	}

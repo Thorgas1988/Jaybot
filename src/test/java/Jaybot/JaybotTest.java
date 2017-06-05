@@ -26,7 +26,7 @@ public class JaybotTest {
     };
 
     private static final int seed = (new Random()).nextInt();
-    private static final byte gameIdx = 61;//18//28//29//31
+    private static final byte gameIdx = 0;//18//28//29//31
     private static final byte levelIdx = 1;
     private static String game = gamesPath + games[gameIdx] + ".txt";
     private static String level1 = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";

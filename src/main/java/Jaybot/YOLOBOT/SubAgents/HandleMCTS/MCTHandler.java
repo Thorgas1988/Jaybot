@@ -132,7 +132,7 @@ public class MCTHandler extends SubAgent {
 			}
 		}
 
-		if (YoloKnowledge.instance.haveEverGotScoreWithoutWinning()){
+		if (YoloKnowledge.getInstance().hasScoreWithoutWinning()){
 			heuristics.SetWeight(HeuristicType.ScoreHeuristic, 50);
 			useNonNegativeScore = false;
 		}else{

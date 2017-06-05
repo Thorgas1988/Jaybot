@@ -21,6 +21,8 @@ public class YoloKnowledge {
 
     private static final double SQRT_2 = Math.sqrt(2.0);
     public static final int MAX_INDICES = 32;
+    public static final int RESSOURCE_MAX = 100;
+	public static final int ITYPE_MAX_COUNT = 100;
     private static final int CONTINUOUS_MOVING_STATE_ADVANCES_COUNT = 2;
     private static final int STOCHASTIC_ITERATIONS_COUNT = 10;
     private static final int STOCHASTIC_ITERATIONS_MIN_TRIES = 1;
@@ -216,6 +218,20 @@ public class YoloKnowledge {
         iTypeCategories[index] = category;
     }
 
+    public int[] getPossiblePlayerITypes() {
+        int[] result = new int[Integer.bitCount(playerITypeMask)];
+        int index = 0;
+
+        for (int i=0; i < MAX_INDICES; i++) {
+            if ((playerITypeMask & (1 << i)) > 0) {
+                result[index] = i;
+                index++;
+            }
+        }
+
+        return result;
+    }
+
     public PlayerEvent getPlayerEventController() {
         return playerEventController;
     }
@@ -312,6 +328,9 @@ public class YoloKnowledge {
         if(!positionOnGrid(state, x, y))
             return true;
 
+        /*
+        TODO has to be implemented!
+
         //Check enemy:
         if(!ignoreDefeatByStochasticEnemy && defeatIsCancel && canBeKilledByStochasticEnemyAt(state, x, y))
             return true;
@@ -343,48 +362,9 @@ public class YoloKnowledge {
                     return true;
             }
         }
+        */
         //Nothing found that will block for sure, so guess action will work!
         return false;
-    }
-
-
-
-
-    public Observation canBeKilledByEnemyNearby(YoloState currentState, int x, int y, boolean ignoreTicks)
-    {
-        ArrayList<Observation>[][] grid = currentState.getObservationGrid();
-        if(positionOnGrid(currentState, x, y)) {
-            ArrayList<Observation> observations = grid[x][y];
-            for (Observation observation : observations) {
-                int obsIndex = iType2Index(observation.itype);
-                
-                if (isContinuousMovingEnemy[obsIndex] && (ignoreTicks || movesAtTickOrDirectFollowing(obsIndex, currentState.getGameTick())))
-                {
-                    //stochastic enemy at testing field, but how near is he to avatar?
-                    int halfBlock = currentState.getBlockSize()/2;
-
-
-                    Vector2d enemyPosition = observation.position;
-                    Vector2d avatarPosition = currentState.getAvatarPosition();
-                    double ePosX = enemyPosition.x+ halfBlock;
-                    double ePosY = enemyPosition.y+ halfBlock;
-                    double aPosX = avatarPosition.x+ halfBlock;
-                    double aPosY = avatarPosition.y+ halfBlock;
-
-                    Vector2d diffVec = new Vector2d(ePosX - aPosX, ePosY - aPosY);
-                    double diff = diffVec.dist(diffVec);
-                    double diffBlocks = diff / currentState.getBlockSize();
-
-                    if (diffBlocks < 2.0)
-                    {
-                        System.out.println("Enemy nearby. Diff:"+diff+", enemyPos x|y:"+enemyPosition.x+"|"+enemyPosition.y+", avatarPos x|y"+avatarPosition.x+"|"+avatarPosition.y);
-                        //enemy is nearby, could kill avatar!!
-                        return observation;
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /**
