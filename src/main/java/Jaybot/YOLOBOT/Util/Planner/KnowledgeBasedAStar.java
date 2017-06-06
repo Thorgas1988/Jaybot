@@ -1,5 +1,6 @@
 package Jaybot.YOLOBOT.Util.Planner;
 
+import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
 import core.game.Observation;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.PlayerEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
@@ -224,9 +225,10 @@ public class KnowledgeBasedAStar {
 							if(obs.category == Types.TYPE_PORTAL){
 								if(!moveDirectionInverse)
 									portalIType = obs.itype;
-								PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent(agent_itype, obs.itype, true);
-								YoloEvent event = pEvent.getEvent(inventoryItems);
-								if(!pEvent.willCancel(inventoryItems) && event.getTeleportTo() != -1)
+								PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent();
+								InvolvedActors actors = new InvolvedActors(agent_itype, obs.itype);
+								YoloEvent event = pEvent.getEvent(actors, inventoryItems);
+								if(!pEvent.willCancel(actors, inventoryItems) && event.getTeleportTo() != -1)
 									isPortalEntry = true;
 
 							}
@@ -237,25 +239,26 @@ public class KnowledgeBasedAStar {
 
 							if(obs.category != Types.TYPE_AVATAR){
 								int passiveIndex = YoloKnowledge.instance.itypeToIndex(obs.itype);
-								PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(agent_itype, obs.itype, true);
 								int spawnIndex = YoloKnowledge.instance.getSpawnIndexOfSpawner(obs.itype);
 								boolean isBadSpawner = false;
 								if(spawnIndex != -1){
 									//Etwas wird gespawnt!
-									PlayerEvent spawnCollisionEvent = YoloKnowledge.instance.getPlayerEvent(agent_itype, YoloKnowledge.instance.indexToItype(spawnIndex), true);
-									if(spawnCollisionEvent.getObserveCount() > 0){
-										YoloEvent yEvent = spawnCollisionEvent.getEvent(inventoryItems);
-										isBadSpawner = yEvent.getKill() || yEvent.getScoreDelta() < 0 || yEvent.getRemoveInventorySlotItem() != -1;
-									}
+									PlayerEvent spawnCollisionEvent = YoloKnowledge.instance.getPlayerEvent();
+									InvolvedActors actors = new InvolvedActors(agent_itype, YoloKnowledge.instance.indexToItype(spawnIndex));
+									YoloEvent yEvent = spawnCollisionEvent.getEvent(actors, inventoryItems);
+									isBadSpawner = yEvent.isDefeat() || yEvent.getScoreDelta() < 0 || yEvent.getRemoveInventorySlotItem() != -1;
 								}
+
+								PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
+								InvolvedActors actors = new InvolvedActors(agent_itype, obs.itype);
 								boolean interactable = YoloKnowledge.instance.canInteractWithUse(agent_itype, obs.itype);
 								useActionEffective[nr] = interactable;
-								boolean deadly = event.getEvent(inventoryItems).getKill() && !YoloKnowledge.instance.hasEverBeenAliveAtFieldWithItypeIndex(YoloKnowledge.instance.itypeToIndex(agent_itype),passiveIndex) && obs.category != Types.TYPE_MOVABLE;
+								boolean deadly = event.getEvent(actors, inventoryItems).isDefeat() && !YoloKnowledge.instance.hasEverBeenAliveAtFieldWithItypeIndex(YoloKnowledge.instance.itypeToIndex(agent_itype),passiveIndex) && obs.category != Types.TYPE_MOVABLE;
 								if(deadly)
 										deadlyField = 0;
-								blockedBy[nr] = isBadSpawner || (event.getObserveCount() > 0 && (event.willCancel(inventoryItems) || !event.getEvent(inventoryItems).getMove() || (deadly ))) && !interactable;
-								if(!(moveBlocked||blockedBy[nr]) && !ignoreMoveables && event.getObserveCount() > 0){
-									if(obs.category == Types.TYPE_MOVABLE && !event.getEvent(inventoryItems).getMove()){
+								blockedBy[nr] = isBadSpawner || ((event.willCancel(actors, inventoryItems) || (deadly ))) && !interactable;
+								if(!(moveBlocked||blockedBy[nr]) && !ignoreMoveables){
+									if(obs.category == Types.TYPE_MOVABLE && event.getEvent(actors, inventoryItems).isBlocked()){
 										//Hier wird wegen eines MOVEABLES geblockt! Teste oneMoveableIgnoreIType
 										if(itypeAusnahme == obs.itype){
 											//Ausnahme trifft ein, dass ein bestimmter IType ein mal ignoriert werden darf!
@@ -271,7 +274,7 @@ public class KnowledgeBasedAStar {
 								if(markedItypes[obs.itype])
 									retVal.add(obs);
 								if(!moveBlocked){
-									int modType = event.getEvent(inventoryItems).getIType();
+									int modType = event.getEvent(actors, inventoryItems).getNewIType();
 									if(modType != -1){
 										new_itype = YoloKnowledge.instance.indexToItype(modType);
 										if(changedItypeX == -1 && changedItypeY == -1){
@@ -289,13 +292,6 @@ public class KnowledgeBasedAStar {
 							newDistance += 2*MALUS/(deadlyField+1);
 						moveBlocked |= !ignorePortals && isPortalEntry && moveDirectionInverse;
 
-						if(!moveBlocked && extraIllegalMove && extraIllegalMoveX == xNew && extraIllegalMoveY == yNew){
-							//Stepping on illegal field
-							PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(agent_itype, extraIllegalMoveItype, false);	//Was passiert mit dem passive?
-							YoloEvent triggeredEvent = event.getEvent(inventoryItems);
-							if(triggeredEvent.getMove() || event.getObserveCount() == 0)	//Passive bewegt sich?
-								moveBlocked = true;
-						}
 						if(distance[xNew][yNew] == 0 || (interpretedAsWall[xNew][yNew] && !moveBlocked)){
 							distance[xNew][yNew] = newDistance;
 							from[xNew][yNew] = (byte)((xNew < x?0:(xNew > x?1:(yNew < y?2:3))));
@@ -345,10 +341,11 @@ public class KnowledgeBasedAStar {
 							if(portalIType != -1 && !ignorePortals){
 								int portalExitIType = -1, portalExitIndex;
 								if(!moveDirectionInverse){
-									PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent(agent_itype, portalIType, true);
-									YoloEvent event = pEvent.getEvent(inventoryItems);
+									InvolvedActors actors = new InvolvedActors(agent_itype, portalIType);
+									PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent();
+									YoloEvent event = pEvent.getEvent(actors, inventoryItems);
 									portalExitIndex = event.getTeleportTo();
-									if(!pEvent.willCancel(inventoryItems) && portalExitIndex != -1)
+									if(!pEvent.willCancel(actors, inventoryItems) && portalExitIndex != -1)
 										portalExitIType = YoloKnowledge.instance.indexToItype(portalExitIndex);
 								}else{
 									portalExitIType = portalIType;
