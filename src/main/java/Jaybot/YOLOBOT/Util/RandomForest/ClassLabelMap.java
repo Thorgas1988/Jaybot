@@ -18,7 +18,12 @@ public class ClassLabelMap {
             hit = new HashMap<>();
             hit.put(classEvent, 1);
         } else {
-            hit.put(classEvent, hit.get(classEvent) + 1);
+            Integer count = hit.get(classEvent);
+            if (count == null) {
+                hit.put(classEvent, 1);
+            } else {
+                hit.put(classEvent, count + 1);
+            }
         }
 
         classes.put(path, hit);

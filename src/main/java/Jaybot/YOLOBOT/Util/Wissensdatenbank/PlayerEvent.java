@@ -18,7 +18,7 @@ public class PlayerEvent implements YoloEventController {
      * Initialize all member variables. Int to 0, new class instance.
      */
     public PlayerEvent(int maxIndices) {
-        randomForest = new RandomForest(maxIndices, 1000);
+        randomForest = new RandomForest(maxIndices, 100);
     }
 
     /**
