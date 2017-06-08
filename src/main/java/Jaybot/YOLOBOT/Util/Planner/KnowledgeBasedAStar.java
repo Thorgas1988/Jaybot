@@ -226,9 +226,8 @@ public class KnowledgeBasedAStar {
 								if(!moveDirectionInverse)
 									portalIType = obs.itype;
 								PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent();
-								InvolvedActors actors = new InvolvedActors(agent_itype, obs.itype);
-								YoloEvent event = pEvent.getEvent(actors, inventoryItems);
-								if(!pEvent.willCancel(actors, inventoryItems) && event.getTeleportTo() != -1)
+								YoloEvent event = pEvent.getEvent(agent_itype, obs.itype, inventoryItems);
+								if(!event.isBlocked() && event.getTeleportTo() != -1)
 									isPortalEntry = true;
 
 							}
@@ -244,8 +243,7 @@ public class KnowledgeBasedAStar {
 								if(spawnIndex != -1){
 									//Etwas wird gespawnt!
 									PlayerEvent spawnCollisionEvent = YoloKnowledge.instance.getPlayerEvent();
-									InvolvedActors actors = new InvolvedActors(agent_itype, YoloKnowledge.instance.indexToItype(spawnIndex));
-									YoloEvent yEvent = spawnCollisionEvent.getEvent(actors, inventoryItems);
+									YoloEvent yEvent = spawnCollisionEvent.getEvent(agent_itype, YoloKnowledge.instance.indexToItype(spawnIndex), inventoryItems);
 									isBadSpawner = yEvent.isDefeat() || yEvent.getScoreDelta() < 0 || yEvent.getRemoveInventorySlotItem() != -1;
 								}
 
@@ -253,12 +251,12 @@ public class KnowledgeBasedAStar {
 								InvolvedActors actors = new InvolvedActors(agent_itype, obs.itype);
 								boolean interactable = YoloKnowledge.instance.canInteractWithUse(agent_itype, obs.itype);
 								useActionEffective[nr] = interactable;
-								boolean deadly = event.getEvent(actors, inventoryItems).isDefeat() && !YoloKnowledge.instance.hasEverBeenAliveAtFieldWithItypeIndex(YoloKnowledge.instance.itypeToIndex(agent_itype),passiveIndex) && obs.category != Types.TYPE_MOVABLE;
+								boolean deadly = event.getEvent(agent_itype, obs.itype, inventoryItems).isDefeat() && !YoloKnowledge.instance.hasEverBeenAliveAtFieldWithItypeIndex(YoloKnowledge.instance.itypeToIndex(agent_itype),passiveIndex) && obs.category != Types.TYPE_MOVABLE;
 								if(deadly)
 										deadlyField = 0;
-								blockedBy[nr] = isBadSpawner || ((event.willCancel(actors, inventoryItems) || (deadly ))) && !interactable;
+								blockedBy[nr] = isBadSpawner || ((event.willCancel(agent_itype, obs.itype, inventoryItems) || (deadly ))) && !interactable;
 								if(!(moveBlocked||blockedBy[nr]) && !ignoreMoveables){
-									if(obs.category == Types.TYPE_MOVABLE && event.getEvent(actors, inventoryItems).isBlocked()){
+									if(obs.category == Types.TYPE_MOVABLE && event.getEvent(agent_itype, obs.itype, inventoryItems).isBlocked()){
 										//Hier wird wegen eines MOVEABLES geblockt! Teste oneMoveableIgnoreIType
 										if(itypeAusnahme == obs.itype){
 											//Ausnahme trifft ein, dass ein bestimmter IType ein mal ignoriert werden darf!
@@ -274,7 +272,7 @@ public class KnowledgeBasedAStar {
 								if(markedItypes[obs.itype])
 									retVal.add(obs);
 								if(!moveBlocked){
-									int modType = event.getEvent(actors, inventoryItems).getNewIType();
+									int modType = event.getEvent(agent_itype, obs.itype, inventoryItems).getNewIType();
 									if(modType != -1){
 										new_itype = YoloKnowledge.instance.indexToItype(modType);
 										if(changedItypeX == -1 && changedItypeY == -1){
@@ -341,11 +339,10 @@ public class KnowledgeBasedAStar {
 							if(portalIType != -1 && !ignorePortals){
 								int portalExitIType = -1, portalExitIndex;
 								if(!moveDirectionInverse){
-									InvolvedActors actors = new InvolvedActors(agent_itype, portalIType);
 									PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent();
-									YoloEvent event = pEvent.getEvent(actors, inventoryItems);
+									YoloEvent event = pEvent.getEvent(agent_itype, portalIType, inventoryItems);
 									portalExitIndex = event.getTeleportTo();
-									if(!pEvent.willCancel(actors, inventoryItems) && portalExitIndex != -1)
+									if(!event.isBlocked() && portalExitIndex != -1)
 										portalExitIType = YoloKnowledge.instance.indexToItype(portalExitIndex);
 								}else{
 									portalExitIType = portalIType;

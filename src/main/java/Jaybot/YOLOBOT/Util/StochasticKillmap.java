@@ -1,11 +1,10 @@
 package Jaybot.YOLOBOT.Util;
 
-import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
-import core.game.Observation;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.PlayerEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
+import core.game.Observation;
 
 import java.util.HashSet;
 
@@ -34,8 +33,7 @@ public class StochasticKillmap {
 					Observation npc = state.getNpcPositions()[i].get(j);
 					if(YoloKnowledge.instance.isStochasticEnemy(YoloKnowledge.instance.itypeToIndex(npc.itype))){
 						PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent();
-						InvolvedActors actors = new InvolvedActors(state.getAvatar().itype, npc.itype);
-						YoloEvent event = enemyEvent.getEvent(actors, state.getInventoryArray());
+						YoloEvent event = enemyEvent.getEvent(state.getAvatar().itype, npc.itype, state.getInventoryArray());
 						if(event.isDefeat()){
 							fillMapForNPC(npc);
 						}

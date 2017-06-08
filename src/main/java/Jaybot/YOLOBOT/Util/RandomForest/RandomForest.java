@@ -22,28 +22,28 @@ public class RandomForest {
         }
     }
 
-    public void train(InvolvedActors actors, byte[][] inventory, YoloEvent[] events) {
+    public void train(int playerIType, int otherIType, byte[][] inventory, YoloEvent[] events) {
         if (inventory == null || events == null || inventory.length != events.length)
             throw new IllegalArgumentException("The inventory and event arrays have to be the same length");
 
         for (int i = 0; i < inventory.length; i++) {
-            train(actors, inventory[i], events[i]);
+            train(playerIType, otherIType, inventory[i], events[i]);
         }
     }
 
-    public void train(InvolvedActors actors, byte[] inventory, YoloEvent event) {
+    public void train(int playerIType, int otherIType, byte[] inventory, YoloEvent event) {
         for (RandomTree tree : forest) {
-            tree.train(actors, inventory, event);
+            tree.train(playerIType, otherIType, inventory, event);
         }
     }
 
-    public YoloEvent getEvent(InvolvedActors actors, byte[] inventory) {
+    public YoloEvent getEvent(int playerIType, int otherIType, byte[] inventory) {
         Map<YoloEvent, Integer> eventFrequencies = new HashMap<>();
         int maxFrequency = -1;
         YoloEvent maxYoloEvent = new YoloEvent();
 
         for (RandomTree tree : forest) {
-            YoloEvent event = tree.getEvent(actors, inventory);
+            YoloEvent event = tree.getEvent(playerIType, otherIType, inventory);
 
             if (event == null)
                 continue;
@@ -63,20 +63,12 @@ public class RandomForest {
         return maxYoloEvent;
     }
 
-    public boolean hasEventForActors(InvolvedActors actors) {
+    public boolean hasEventForActors(int playerIType, int otherIType) {
         for (RandomTree tree : forest) {
-            if (!tree.hasEventForActors(actors))
+            if (!tree.hasEventForActors(playerIType, otherIType))
                 return false;
         }
         return true;
-    }
-
-    public int classLabelCount() {
-        return forest[0].classLabelCount();
-    }
-
-    public int classLabelCount(YoloEvent event) {
-        return forest[0].classLabelCount(event);
     }
 
     @Override

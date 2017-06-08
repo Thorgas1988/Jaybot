@@ -1,10 +1,9 @@
 package Jaybot.YOLOBOT.Util.Heuristics;
 
-import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
-import core.game.Observation;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.PlayerEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
+import core.game.Observation;
 import tools.Vector2d;
 
 public class ScoreLookaheadHeuristic extends IModdableHeuristic {
@@ -50,8 +49,7 @@ public class ScoreLookaheadHeuristic extends IModdableHeuristic {
 			byte[] inventory = state.getInventoryArray();
 			for (Observation obs : state.getObservationGrid()[agentX][agentY]) {
 				PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent();
-				InvolvedActors actors = new InvolvedActors(avatarItype, obs.itype);
-				value += pEvent.getEvent(actors, inventory).getScoreDelta();
+				value += pEvent.getEvent(avatarItype, obs.itype, inventory).getScoreDelta();
 			}
 		}
 			

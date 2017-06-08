@@ -6,7 +6,6 @@ import Jaybot.YOLOBOT.Util.Heuristics.AStarDistanceHeuristic;
 import Jaybot.YOLOBOT.Util.Heuristics.DeadEndHeuristic;
 import Jaybot.YOLOBOT.Util.Heuristics.DistanceToNPCsHeuristic;
 import Jaybot.YOLOBOT.Util.Planner.KnowledgeBasedAStar;
-import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.PlayerEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
@@ -302,12 +301,11 @@ public class TargetChooser {
         int posX = (int) (observation.position.x / state.getBlockSize());
         int posY = (int) (observation.position.y / state.getBlockSize());
         PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent();
-        InvolvedActors actors = new InvolvedActors(state.getAvatar().itype, observation.itype);
-        YoloEvent event = pEvent.getEvent(actors, state.getInventoryArray());
+        YoloEvent event = pEvent.getEvent(state.getAvatar().itype, observation.itype, state.getInventoryArray());
         int slot = event.getAddInventorySlotItem();
         boolean winState = event.isVictory();
         boolean scoreIncrease = event.getScoreDelta() > 0;
-        boolean notSeenYet = !pEvent.hasEventForActors(actors);
+        boolean notSeenYet = !pEvent.hasEventForActors(state.getAvatar().itype, observation.itype);
         boolean useActionEffective = YoloKnowledge.instance
                 .canInteractWithUse(state.getAvatar().itype, observation.itype);
         boolean inventoryIncrease = event.getAddInventorySlotItem() != -1;
@@ -316,7 +314,7 @@ public class TargetChooser {
         boolean willCancel = event.isBlocked();
         YoloEvent blockedEvent = new YoloEvent();
         blockedEvent.setBlocked(true);
-        boolean isProbablyWall = (double) pEvent.classLabelCount(blockedEvent) / (double) pEvent.classLabelCount() > 0.95;
+        boolean isProbablyWall = (double) pEvent.getBlockedEventCount() / (double) pEvent.getObservationCount() > 0.95;
         boolean killedOnColision = event.isDefeat();
         boolean isPortal = observation.category == Types.TYPE_PORTAL;
         boolean iTypeChange = event.getNewIType() != -1;
@@ -444,9 +442,8 @@ public class TargetChooser {
                     int enemyIndex = YoloKnowledge.instance.itypeToIndex(enemyItype);
 
                     if (YoloKnowledge.instance.isStochasticEnemy(enemyIndex)) {
-                        InvolvedActors actors = new InvolvedActors(state.getAvatar().itype, enemyItype);
                         PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent();
-                        YoloEvent event = enemyEvent.getEvent(actors, state.getInventoryArray());
+                        YoloEvent event = enemyEvent.getEvent(state.getAvatar().itype, enemyItype, state.getInventoryArray());
                         if (event.isDefeat()) {
                             isFastMovingDeadlyStochasticEnemy = true;
                         }
