@@ -18,7 +18,7 @@ public class RandomRolloutPolicy extends RolloutPolicy {
 		for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
 			ACTIONS actions = (ACTIONS) iterator.next();
 
-			if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(state, actions))
+			if(YoloKnowledge.getInstance().actionLeadsOutOfBattlefield(state, actions))
 				iterator.remove();
 		}
 		

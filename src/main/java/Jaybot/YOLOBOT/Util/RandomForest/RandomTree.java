@@ -4,7 +4,6 @@ import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * Created by Torsten on 17.05.17.
@@ -12,7 +11,7 @@ import java.util.Map.Entry;
 public class RandomTree {
 
     private final RandomCondition[] conditions;
-    private final Map<Integer, ClassLabelMap> classes = new HashMap<>();
+    private final Map<InvolvedActors, ClassLabelMap> classes = new HashMap<>();
 
     public RandomTree(int treeSize) {
         conditions = new RandomCondition[treeSize];
@@ -34,8 +33,8 @@ public class RandomTree {
         return path;
     }
 
-    public YoloEvent getEvent(int colliderIType, byte[] inventory) {
-        ClassLabelMap classLabels = classes.get(colliderIType);
+    public YoloEvent getEvent(InvolvedActors actors, byte[] inventory) {
+        ClassLabelMap classLabels = classes.get(actors);
 
         if (classLabels == null) {
             return new YoloEvent();
@@ -44,14 +43,15 @@ public class RandomTree {
         return classLabels.getEvent(getTreePath(inventory));
     }
 
-    public void train(int colliderIType, byte[] inventory, YoloEvent event) {
-        ClassLabelMap classLabels = classes.get(colliderIType);
+    public void train(InvolvedActors actors, byte[] inventory, YoloEvent event) {
+        ClassLabelMap classLabels = classes.get(actors);
 
         if (classLabels == null) {
             classLabels = new ClassLabelMap();
         }
 
         classLabels.put(getTreePath(inventory), event);
+        classes.put(actors, classLabels);
     }
 
     @Override
@@ -62,5 +62,25 @@ public class RandomTree {
         }
 
         return sb.toString();
+    }
+
+    public boolean hasEventForActors(InvolvedActors actors) {
+        return classes.containsKey(actors);
+    }
+
+    public int classLabelCount() {
+        int count = 0;
+        for (ClassLabelMap classLabels : classes.values()) {
+            count += classLabels.classLabelCount();
+        }
+        return count;
+    }
+
+    public int classLabelCount(YoloEvent event) {
+        int count = 0;
+        for (ClassLabelMap classLabels : classes.values()) {
+            count += classLabels.classLabelCount(event);
+        }
+        return count;
     }
 }

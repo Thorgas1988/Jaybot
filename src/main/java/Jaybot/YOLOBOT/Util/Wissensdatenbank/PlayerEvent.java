@@ -1,5 +1,6 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
+import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
 
 public class PlayerEvent implements YoloEventController {
@@ -17,7 +18,7 @@ public class PlayerEvent implements YoloEventController {
      * Initialize all member variables. Int to 0, new class instance.
      */
     public PlayerEvent(int maxIndices) {
-        randomForest = new RandomForest(maxIndices, 1000);
+        randomForest = new RandomForest(maxIndices, 100);
     }
 
     /**
@@ -41,9 +42,11 @@ public class PlayerEvent implements YoloEventController {
      * @param addInventory    change of the avatar inventory
      * @param removeInventory change of the avatar inventory
      */
-    public void learnEventHappened(int colliderIType, byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
+    public void learnEventHappened(int playerIType, int otherIType, byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
+        InvolvedActors actors = new InvolvedActors(playerIType, otherIType);
         YoloEvent event = new YoloEvent();
         event.setNewIType(newItype);
+        event.setOldIType(actors.getPlayerIType());
         event.setAddInventorySlotItem(addInventory);
         event.setDefeat(killed);
         event.setBlocked(!move);
@@ -53,18 +56,20 @@ public class PlayerEvent implements YoloEventController {
         event.setTeleportTo(teleportTo);
         event.setVictory(winGame);
 
-        randomForest.train(colliderIType, inventoryItems, event);
+        randomForest.train(actors, inventoryItems, event);
     }
 
-    public void learnEventHappened(int colliderIType, byte[] inventoryItems, YoloEvent event) {
-        randomForest.train(colliderIType, inventoryItems, event);
+    public void learnEventHappened(int playerIType, int otherIType, byte[] inventoryItems, YoloEvent event) {
+        InvolvedActors actors = new InvolvedActors(playerIType, otherIType);
+        randomForest.train(actors, inventoryItems, event);
     }
 
     /**
      * @return boolean if this move is beeing blocked
      */
-    public boolean willCancel(byte[] inventoryItems) {
-        YoloEvent event = randomForest.getEvent(inventoryItems);
+    public boolean willCancel(int playerIType, int otherIType, byte[] inventoryItems) {
+        InvolvedActors actors = new InvolvedActors(playerIType, otherIType);
+        YoloEvent event = randomForest.getEvent(actors, inventoryItems);
         return event.isBlocked();
     }
 
@@ -72,7 +77,20 @@ public class PlayerEvent implements YoloEventController {
      * @param inventoryItems An array which stores the number of each inventory type
      * @return The YoloEvent with the highest probability
      */
-    public YoloEvent getEvent(byte[] inventoryItems) {
-        return randomForest.getEvent(inventoryItems);
+    public YoloEvent getEvent(int playerIType, int otherIType, byte[] inventoryItems) {
+        InvolvedActors actors = new InvolvedActors(playerIType, otherIType);
+        return randomForest.getEvent(actors, inventoryItems);
+    }
+
+    public boolean hasEventForActors(InvolvedActors actors) {
+        return randomForest.hasEventForActors(actors);
+    }
+
+    public int classLabelCount() {
+        return randomForest.classLabelCount();
+    }
+
+    public int classLabelCount(YoloEvent event) {
+        return randomForest.classLabelCount(event);
     }
 }

@@ -31,10 +31,10 @@ public class StochasticKillmap {
 			if(state.getNpcPositions()[i] != null){
 				for (int j = 0; j < state.getNpcPositions()[i].size(); j++) {
 					Observation npc = state.getNpcPositions()[i].get(j);
-					if(YoloKnowledge.instance.isStochasticEnemy(YoloKnowledge.instance.itypeToIndex(npc.itype))){
-						PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent(state.getAvatar().itype, npc.itype, true);
-						YoloEvent event = enemyEvent.getEvent(state.getInventoryArray());
-						if(event.isDefeat() /*&& !YoloKnowledge.instance.canInteractWithUse(state.getAvatar().itype, enemyItype)*/){
+					if(YoloKnowledge.getInstance().isStochasticEnemy(YoloKnowledge.getInstance().iType2Index(npc.itype))){
+						PlayerEvent enemyEvent = YoloKnowledge.getInstance().getPlayerEventController();
+						YoloEvent event = enemyEvent.getEvent(state.getAvatar().itype, npc.itype, state.getInventoryArray());
+						if(event.isDefeat()){
 							fillMapForNPC(npc);
 						}
 					}	
@@ -50,12 +50,12 @@ public class StochasticKillmap {
 
 		int x = (int) npc.position.x;
 		int y = (int) npc.position.y;
-		stepX = YoloKnowledge.instance.getNpcMaxMovementX(npc.itype);
-		stepY = YoloKnowledge.instance.getNpcMaxMovementY(npc.itype);
+		stepX = YoloKnowledge.getInstance().getNpcMaxMovementX(npc.itype);
+		stepY = YoloKnowledge.getInstance().getNpcMaxMovementY(npc.itype);
 		
-		npcMaske = YoloKnowledge.instance.getBlockingMask(YoloKnowledge.instance.itypeToIndex(npc.itype)) & ~YoloKnowledge.instance.getPlayerIndexMask();
+		npcMaske = YoloKnowledge.getInstance().getBlockingMask(YoloKnowledge.getInstance().itypeToIndex(npc.itype)) & ~YoloKnowledge.getInstance().getPlayerIndexMask();
 		
-		npcMaskeDyn = npcMaske & ~YoloKnowledge.instance.getDynamicMask();
+		npcMaskeDyn = npcMaske & ~YoloKnowledge.getInstance().getDynamicMask();
 		
 		fillMapForNPCRec(npc,x,y, 0, false);
 		
@@ -128,7 +128,7 @@ public class StochasticKillmap {
 		int x = xPixel / blockSize;
 		int y = yPixel / blockSize;
 		
-		if(YoloKnowledge.instance.positionAufSpielfeld(x, y)){
+		if(YoloKnowledge.getInstance().positionAufSpielfeld(x, y)){
 			//is Collision
 			int fieldMask = state.getSimpleState().getMask(x, y);
 			if((npcMaske & fieldMask)==0){

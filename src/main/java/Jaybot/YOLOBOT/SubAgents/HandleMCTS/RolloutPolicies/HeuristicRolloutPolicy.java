@@ -69,7 +69,7 @@ public class HeuristicRolloutPolicy extends RolloutPolicy {
 				break;
 			default:
 			}
-			if(YoloKnowledge.instance.positionAufSpielfeld(myX, myY) && heuristicToUse.canStepOn(myX, myY)){
+			if(YoloKnowledge.getInstance().positionOnGrid(state, myX, myY) && heuristicToUse.canStepOn(myX, myY)){
 				//Ziel ist auf dem Spielfeld
 				int myHeuristicValue = (int) heuristicToUse.getModdedHeuristic(state, myX, myY, orientation);
 				if(myHeuristicValue > currentBestHeuristic){
@@ -122,7 +122,7 @@ public class HeuristicRolloutPolicy extends RolloutPolicy {
 			bestActions = validActions;
 
 
-		if(validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canUseInteractWithSomethingAt(state)){
+		if(validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.getInstance().canUseInteractWithSomethingAt(state)){
 			bestActions.remove(ACTIONS.ACTION_NIL);
 			if(currentBestHeuristic == 0)
 				bestActions.clear();

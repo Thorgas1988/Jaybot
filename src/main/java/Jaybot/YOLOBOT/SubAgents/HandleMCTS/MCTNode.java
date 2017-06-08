@@ -163,7 +163,7 @@ public abstract class MCTNode {
 
 
 		//Check Reach Target:
-		if(YoloKnowledge.instance.positionAufSpielfeld(newState.getAvatarX(), newState.getAvatarY())){
+		if(YoloKnowledge.getInstance().positionOnGrid(newState, newState.getAvatarX(), newState.getAvatarY())){
 			if(MCTHandler.heuristicToUse != null && MCTHandler.heuristicToUse.EvaluateWithoutNormalisation(newState) == 0){
 				//Already at target!
 				targetReached = true;
@@ -199,7 +199,7 @@ public abstract class MCTNode {
 			}else{
 				//Random walk lebt!
 				//Check A-Star Target Reached:
-				if(!targetReached && MCTHandler.heuristicToUse != null && YoloKnowledge.instance.positionAufSpielfeld(newState.getAvatarX(), newState.getAvatarY())){
+				if(!targetReached && MCTHandler.heuristicToUse != null && YoloKnowledge.getInstance().positionOnGrid(newState, newState.getAvatarX(), newState.getAvatarY())){
 					double heuristicValue = MCTHandler.heuristicToUse.EvaluateWithoutNormalisation(newState);
 					summedHeuristicUntilTargetReached -= heuristicValue;
 					if(heuristicValue == 0){
@@ -357,13 +357,13 @@ public abstract class MCTNode {
 	public ArrayList<ACTIONS> getValidActions(YoloState curState) {
 		if(forceValidActionsDontChange)
 			return new ArrayList<ACTIONS>(validActions);
-		Observation stochasticKiller = YoloKnowledge.instance.getPossibleStochasticKillerAt(curState, curState.getAvatarX(), curState.getAvatarY());
+		Observation stochasticKiller = YoloKnowledge.getInstance().getPossibleStochasticKillerAt(curState, curState.getAvatarX(), curState.getAvatarY());
 		boolean shouldMove = stochasticKiller != null;
-		boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller.itype) && observationIsInFrontOfAvatar(curState, stochasticKiller);
+		boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.getInstance().canInteractWithUse(curState.getAvatar().itype, stochasticKiller.itype) && observationIsInFrontOfAvatar(curState, stochasticKiller);
 		
 		for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
 			ACTIONS actions = (ACTIONS) iterator.next();
-			if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
+			if(YoloKnowledge.getInstance().actionLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.getInstance().moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
 				iterator.remove();
 				childrenFreeCount--;
 			}
@@ -407,7 +407,7 @@ public abstract class MCTNode {
 				x--;
 		
 		
-		if(!YoloKnowledge.instance.positionAufSpielfeld(x,y))
+		if(!YoloKnowledge.getInstance().positionOnGrid(curState,x,y))
 			return false;
 		return  curState.getObservationGrid()[x][y].contains(observation);
 			

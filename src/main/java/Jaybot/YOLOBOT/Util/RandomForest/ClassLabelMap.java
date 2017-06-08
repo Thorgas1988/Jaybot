@@ -18,7 +18,12 @@ public class ClassLabelMap {
             hit = new HashMap<>();
             hit.put(classEvent, 1);
         } else {
-            hit.put(classEvent, hit.get(classEvent) + 1);
+            Integer count = hit.get(classEvent);
+            if (count == null) {
+                hit.put(classEvent, 1);
+            } else {
+                hit.put(classEvent, count + 1);
+            }
         }
 
         classes.put(path, hit);
@@ -41,5 +46,27 @@ public class ClassLabelMap {
         }
 
         return resultEvent;
+    }
+
+    public int classLabelCount() {
+        int count = 0;
+        for (Map<YoloEvent, Integer> map : classes.values()) {
+            for (Integer freq : map.values()) {
+                count += freq;
+            }
+        }
+        return count;
+    }
+
+    public int classLabelCount(YoloEvent event) {
+        int count = 0;
+
+        for (Map<YoloEvent, Integer> map : classes.values()) {
+            Integer tempCount = map.get(event);
+            if (tempCount != null)
+                count += tempCount.intValue();
+        }
+
+        return count;
     }
 }

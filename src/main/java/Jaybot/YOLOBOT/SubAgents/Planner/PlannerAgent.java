@@ -69,11 +69,11 @@ public class PlannerAgent extends SubAgent {
 
 	private void guessTask(YoloState yoloState) {
 		if(!Agent.UPLOAD_VERSION)
-			System.out.println("Guess Task with knowledge:\n" + YoloKnowledge.instance.toString());
-		if(YoloKnowledge.instance.getPushableITypes().size() > 0){
-			if(YoloKnowledge.instance.getPushableITypes().size() >= itypeNrToPush)
+			System.out.println("Guess Task with knowledge:\n" + YoloKnowledge.getInstance().toString());
+		if(YoloKnowledge.getInstance().getPushableITypes().size() > 0){
+			if(YoloKnowledge.getInstance().getPushableITypes().size() >= itypeNrToPush)
 				itypeNrToPush = 0;
-			object_to_push = YoloKnowledge.instance.getPushableITypes().get(itypeNrToPush);
+			object_to_push = YoloKnowledge.getInstance().getPushableITypes().get(itypeNrToPush);
 			if(getCountOfIType(yoloState, object_to_push) >= 5)
 				object_to_push = -1;
 		}else{
@@ -87,8 +87,8 @@ public class PlannerAgent extends SubAgent {
 			Status = SubAgentStatus.POSTPONED;
 			return;
 		}
-		int indexToPushTo = YoloKnowledge.instance.getPushTargetIndex(YoloKnowledge.instance.itypeToIndex(object_to_push));
-		object_to_push_to = indexToPushTo==-1?-1: YoloKnowledge.instance.indexToItype(indexToPushTo);
+		int indexToPushTo = YoloKnowledge.getInstance().getPushTargetIndex(YoloKnowledge.getInstance().iType2Index(object_to_push));
+		object_to_push_to = indexToPushTo==-1?-1: YoloKnowledge.getInstance().indexToItype(indexToPushTo);
 		
 		if(object_to_push_to == -1){
 			//Noch kein bekanntes Ziel fuer das Objekt gefunden!
@@ -276,7 +276,7 @@ public class PlannerAgent extends SubAgent {
 					state = state.copyAdvanceLearn(actions.removeFirst());
 					if(state.getGameScore() > score){
 						//Ist guter push!
-						YoloKnowledge.instance.setPushTargetIndex(YoloKnowledge.instance.itypeToIndex(object_to_push), YoloKnowledge.instance.itypeToIndex(object_to_push_to));
+						YoloKnowledge.getInstance().setPushTargetIndex(YoloKnowledge.getInstance().iType2Index(object_to_push), YoloKnowledge.getInstance().iType2Index(object_to_push_to));
 					}
 				}else{
 					state.advance(actions.removeFirst());

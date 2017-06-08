@@ -1,7 +1,6 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Agent;
-import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.Helper.Learner;
 import Jaybot.YOLOBOT.YoloState;
 import core.game.Event;
@@ -280,7 +279,7 @@ public class YoloKnowledge {
         return inventoryArray;
     }
 
-    private boolean positionOnGrid(YoloState state, int x, int y) {
+    public boolean positionOnGrid(YoloState state, int x, int y) {
         ArrayList<Observation>[][] grid = state.getObservationGrid();
         return (x >= 0 && x < grid.length) && (y >= 0 && y < grid[0].length);
     }

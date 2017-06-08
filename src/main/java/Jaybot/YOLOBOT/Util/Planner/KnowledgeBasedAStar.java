@@ -127,7 +127,7 @@ public class KnowledgeBasedAStar {
 	public List<Observation> calculate(int startX, int startY, int agent_itype_start,
 			int[] interestingItypes, boolean ignoreMoveables, boolean ignoreNPC, boolean ignorePortals) {
 		LinkedList<Observation> retVal = new LinkedList<Observation>();
-		if(!YoloKnowledge.instance.positionAufSpielfeld(startX, startY))
+		if(!YoloKnowledge.getInstance().positionOnGrid(startX, startY))
 			return null;
 		if(countFoundItypes){
 			iTypesFoundCount = new int[YoloKnowledge.ITYPE_MAX_COUNT];

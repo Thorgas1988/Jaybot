@@ -42,15 +42,15 @@ public class ScoreLookaheadHeuristic extends IModdableHeuristic {
 		
 
 		double value = 0;
-		if(!YoloKnowledge.instance.positionAufSpielfeld(agentX, agentY)){
+		if(!YoloKnowledge.getInstance().positionOnGrid(state, agentX, agentY)){
 			value = -1;
 		}else{
 			int avatarItype = state.getAvatar().itype;
 			byte[] inventory = state.getInventoryArray();
 			for (Observation obs : state.getObservationGrid()[agentX][agentY]) {
-				PlayerEvent pEvent = YoloKnowledge.instance.getPlayerEvent(avatarItype, obs.itype, true);
-				if(pEvent.getObserveCount()>0)
-					value += pEvent.getEvent(inventory).getScoreDelta();
+				PlayerEvent pEvent = YoloKnowledge.getInstance().getPlayerEventController();
+				if(pEvent.classLabelCount()>0)
+					value += pEvent.getEvent(avatarItype, obs.itype, inventory).getScoreDelta();
 			}
 		}
 			

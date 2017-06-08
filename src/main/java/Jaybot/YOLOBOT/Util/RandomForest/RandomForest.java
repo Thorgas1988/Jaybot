@@ -1,7 +1,6 @@
 package Jaybot.YOLOBOT.Util.RandomForest;
 
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
-import Jaybot.YOLOBOT.YoloState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,28 +22,28 @@ public class RandomForest {
         }
     }
 
-    public void train(int colliderIType, byte[][] inventory, YoloEvent[] events) {
+    public void train(InvolvedActors actors, byte[][] inventory, YoloEvent[] events) {
         if (inventory == null || events == null || inventory.length != events.length)
             throw new IllegalArgumentException("The inventory and event arrays have to be the same length");
 
         for (int i = 0; i < inventory.length; i++) {
-            train(colliderIType, inventory[i], events[i]);
+            train(actors, inventory[i], events[i]);
         }
     }
 
-    public void train(int colliderIType, byte[] inventory, YoloEvent event) {
+    public void train(InvolvedActors actors, byte[] inventory, YoloEvent event) {
         for (RandomTree tree : forest) {
-            tree.train(colliderIType, inventory, event);
+            tree.train(actors, inventory, event);
         }
     }
 
-    public YoloEvent getEvent(int colliderIType, byte[] inventory) {
+    public YoloEvent getEvent(InvolvedActors actors, byte[] inventory) {
         Map<YoloEvent, Integer> eventFrequencies = new HashMap<>();
         int maxFrequency = -1;
         YoloEvent maxYoloEvent = new YoloEvent();
 
         for (RandomTree tree : forest) {
-            YoloEvent event = tree.getEvent(colliderIType, inventory);
+            YoloEvent event = tree.getEvent(actors, inventory);
 
             if (event == null)
                 continue;
@@ -62,6 +61,22 @@ public class RandomForest {
         }
 
         return maxYoloEvent;
+    }
+
+    public boolean hasEventForActors(InvolvedActors actors) {
+        for (RandomTree tree : forest) {
+            if (!tree.hasEventForActors(actors))
+                return false;
+        }
+        return true;
+    }
+
+    public int classLabelCount() {
+        return forest[0].classLabelCount();
+    }
+
+    public int classLabelCount(YoloEvent event) {
+        return forest[0].classLabelCount(event);
     }
 
     @Override
