@@ -436,13 +436,13 @@ public class TargetChooser {
 
         boolean isFastMovingDeadlyStochasticEnemy = false;
         if (state.getNpcPositions() != null && state.getNpcPositions().length > 0) {
+            PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent();
             for (int i = 0; i < state.getNpcPositions().length; i++) {
                 if (state.getNpcPositions()[i] != null && !state.getNpcPositions()[i].isEmpty()) {
                     int enemyItype = state.getNpcPositions()[i].get(0).itype;
                     int enemyIndex = YoloKnowledge.instance.itypeToIndex(enemyItype);
 
                     if (YoloKnowledge.instance.isStochasticEnemy(enemyIndex)) {
-                        PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent();
                         YoloEvent event = enemyEvent.getEvent(state.getAvatar().itype, enemyItype, state.getInventoryArray());
                         if (event.isDefeat()) {
                             isFastMovingDeadlyStochasticEnemy = true;

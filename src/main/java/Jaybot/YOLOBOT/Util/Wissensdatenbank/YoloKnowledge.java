@@ -1,11 +1,10 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
-import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
-import core.game.Event;
-import core.game.Observation;
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.SimpleState;
 import Jaybot.YOLOBOT.YoloState;
+import core.game.Event;
+import core.game.Observation;
 import ontology.Types;
 import ontology.Types.ACTIONS;
 import ontology.Types.WINNER;
@@ -1185,6 +1184,8 @@ public class YoloKnowledge {
 		byte[] inventoryItemsNow = stateNow.getInventoryArray();
 		byte avatarIndex = itypeToIndex(avatarBefore.itype);
 
+		YoloEvent event = playerEventController.getEvent(indexToItype(avatarIndex), indexToItype(passiveIndex), inventoryItemsBefore);
+
 		if(!Agent.UPLOAD_VERSION && DEBUG)
 			System.out.println("Learn AgentEvent: " + indexToItype(avatarIndex) + " -> " + indexToItype(passiveIndex));
 
@@ -1290,7 +1291,7 @@ public class YoloKnowledge {
 			itypeActive = itypeToIndex(activeNow.itype);
 		}else{
 			//Keine Aenderung des Itypes. Uebernehme alten Wert:
-			itypeActive = (byte) playerEventController.getEvent(indexToItype(avatarIndex), indexToItype(passiveIndex), inventoryItemsBefore).getNewIType();
+			itypeActive = (byte) event.getNewIType();
 		}
 
 		if(Math.abs(stateNow.getAvatarX()-stateBefore.getAvatarX()) + Math.abs(stateNow.getAvatarY()-stateBefore.getAvatarY()) > 2){
@@ -1366,7 +1367,7 @@ public class YoloKnowledge {
 			}
 		}else{
 			//Kein add:
-			int inventoryShouldAdd = playerEventController.getEvent(indexToItype(avatarIndex), indexToItype(passiveIndex), inventoryItemsBefore).getAddInventorySlotItem();
+			int inventoryShouldAdd = event.getAddInventorySlotItem();
 			if(inventoryShouldAdd != -1){
 				//There should be an increase!
 				if(inventoryMax[inventoryShouldAdd] == inventoryItemsBefore[inventoryShouldAdd]){

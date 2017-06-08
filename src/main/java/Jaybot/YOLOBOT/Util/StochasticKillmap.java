@@ -27,12 +27,12 @@ public class StochasticKillmap {
 		if(state.getNpcPositions() == null){
 			return;
 		}
+		PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent();
 		for (int i = 0; i < state.getNpcPositions().length; i++) {
 			if(state.getNpcPositions()[i] != null){
 				for (int j = 0; j < state.getNpcPositions()[i].size(); j++) {
 					Observation npc = state.getNpcPositions()[i].get(j);
 					if(YoloKnowledge.instance.isStochasticEnemy(YoloKnowledge.instance.itypeToIndex(npc.itype))){
-						PlayerEvent enemyEvent = YoloKnowledge.instance.getPlayerEvent();
 						YoloEvent event = enemyEvent.getEvent(state.getAvatar().itype, npc.itype, state.getInventoryArray());
 						if(event.isDefeat()){
 							fillMapForNPC(npc);

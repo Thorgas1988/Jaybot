@@ -121,12 +121,12 @@ public class KnowledgeBasedPushSlidePlanner {
 			int xZiel, int yZiel, int xVerbot, int yVerbot, int itypeVerbot, byte[] inventory) {
 		if(xZiel == xVerbot && yZiel == yVerbot)
 			return true;	//Initale Queue eintraege!
-		
+
+		PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
 		for (int player_itype : YoloKnowledge.instance.getPossiblePlayerItypes()) {
 			boolean error = false;
 			for (Observation obs : grid[xStart][yStart]) {
 				if(obs.category != Types.TYPE_AVATAR){
-					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
 					if(event.willCancel(player_itype, obs.itype, inventory)){
 						if(!Agent.UPLOAD_VERSION && DEBUG)
 							System.out.println(obs.itype + " blocks Player " + player_itype);
@@ -183,16 +183,16 @@ public class KnowledgeBasedPushSlidePlanner {
 	 */
 	private boolean playerCanPush(int fromX, int fromY, int toX,
 			int toY, byte[] inventory) {
-		
+
+		PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
 		for (int player_itype : YoloKnowledge.instance.getPossiblePlayerItypes()) {
 			boolean error = false;
 			for (Observation obs : grid[fromX][fromY]) {
 				//Kann dieser IType auf dem Startfeld stehen?
 				if(obs.category != Types.TYPE_AVATAR){
-					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
 					YoloEvent triggeringEvent = event.getEvent(player_itype, obs.itype, inventory);
 					if(triggeringEvent.getNewIType() == -1 || YoloKnowledge.instance.indexToItype(triggeringEvent.getNewIType()) == player_itype)
-						error |= event.willCancel(player_itype, obs.itype, inventory);
+						error |= triggeringEvent.isBlocked();
 					else
 						error = true;
 				}
@@ -202,9 +202,8 @@ public class KnowledgeBasedPushSlidePlanner {
 				//Kann er zusaetzlich auch auf das Zielfeld gehen? 
 				for (Observation obs2 : grid[toX][toY]) {
 					if(obs2.category != Types.TYPE_AVATAR){
-						PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
 						YoloEvent triggeringEvent = event.getEvent(player_itype, obs2.itype, inventory);
-						error |= event.willCancel(player_itype, obs2.itype, inventory);
+						error |= triggeringEvent.isBlocked();
 					}
 				}
 			}
