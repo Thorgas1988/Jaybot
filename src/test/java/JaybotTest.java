@@ -24,7 +24,7 @@ public class JaybotTest {
     };
 
     private static final int seed = (new Random()).nextInt();
-    private static final byte gameIdx = 0;//18//28//29//31
+    private static final byte gameIdx = 31;//18//28//29//31
     private static byte levelIdx = 0;
     private static String game = gamesPath + games[gameIdx] + ".txt";
     private static String level1 = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
@@ -34,7 +34,7 @@ public class JaybotTest {
 
 
     @Test
-    @Ignore("Activate to play the game by yourself")
+    //@Ignore("Activate to play the game by yourself")
     public void shouldPlayGame() {
         ArcadeMachine.playOneGame(game, level1, recordActionsFile, seed);
     }
@@ -46,7 +46,7 @@ public class JaybotTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void runGameInLoop() {
         int times = 30;
         int wins = 0;

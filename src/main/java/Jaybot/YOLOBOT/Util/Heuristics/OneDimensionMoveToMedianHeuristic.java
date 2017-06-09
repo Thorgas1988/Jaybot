@@ -1,6 +1,5 @@
 package Jaybot.YOLOBOT.Util.Heuristics;
 
-import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
 import core.game.Observation;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 import Jaybot.YOLOBOT.YoloState;
@@ -147,8 +146,7 @@ public class OneDimensionMoveToMedianHeuristic extends IHeuristic {
 		boolean isUninteresting = false;
 		
 		//Kills me and is no score:
-		InvolvedActors actors = new InvolvedActors(ys.getAvatar().itype, observation.itype);
-		isUninteresting |= YoloKnowledge.instance.getPlayerEvent().getEvent(actors, ys.getInventoryArray()).isDefeat() & !YoloKnowledge.instance.getIncreaseScoreIfInteractWith(ys.getAvatar().itype, observation.itype);
+		isUninteresting |= YoloKnowledge.instance.getPlayerEvent(ys.getAvatar().itype, observation.itype, true).getEvent(ys.getInventoryArray()).getKill() & !YoloKnowledge.instance.getIncreaseScoreIfInteractWith(ys.getAvatar().itype, observation.itype);
 		
 		return isUninteresting;
 	}

@@ -1,303 +1,246 @@
 package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 
-import Jaybot.YOLOBOT.Agent;
-import Jaybot.YOLOBOT.Util.SimpleState;
-import Jaybot.YOLOBOT.Util.Wissensdatenbank.Helper.YoloEventHelper;
-import Jaybot.YOLOBOT.YoloState;
-import core.game.Observation;
-import ontology.Types;
+public class YoloEvent extends Event {
 
-public class YoloEvent {
+	/**
+	 * Speichert Byte events.
+	 * <br>Eintraege gehoeren zu:<br>
+	 * <ul>
+	 * <li> 0 = itype </li>
+	 * <li> 1 = scoreDelta </li>
+	 * <li> 2 = spawnedItype </li>
+	 * <li> 3 = teleportTo </li>
+	 * <li> 4 = addInventory </li>
+	 * <li> 5 = removeInventory </li>
+	 * </ul>
+	 */
 
-    public static final byte UNDEFINED = -1;
-    public static final byte NO_CHANGE = 0;
+	/**
+	 * Speichert Boolean events.
+	 * <br>Eintraege gehoeren zu:<br>
+	 * <ul>
+	 * <li> 0 = killed </li>
+	 * <li> 1 = winGame </li>
+	 * <li> 2 = move </li>
+	 * </ul>
+	 */
 
-    private boolean victory = false;
-    private boolean defeat = false;
-    private boolean blocked = false;
-
-    private int newIType = UNDEFINED;
-    private int oldIType = UNDEFINED;
-    private int hpDelta = NO_CHANGE;
-    private double scoreDelta = NO_CHANGE;
-    private int spawnedIType = UNDEFINED;
-    private int teleportTo = UNDEFINED;
-    private int addInventorySlot = UNDEFINED;
-    private int removeInventorySlot = UNDEFINED;
+    /**
+	 * Push wird gesondert von den restlichen Events behandelt:<br>
+	 * Wird einmal ein erfolgreicher Push bemerkt, so wird diesers Event immer als pushbar angesehen.<br>
+	 * Ob der push tatsaechlich ausfuehrbar ist wird allerdings nicht direkt ermittelt.
+	 * Dazu muss rekursiv weiter nachgeforscht werden (ob der zu pushende block da hin kann wo er hin muesste)
+	 */
+	boolean hasMovedOnce;
 
 
-    public YoloEvent() {
-    }
-
-    // Only needed for the random forest unit tests
-    public YoloEvent(boolean blocked, boolean defeat, boolean victory, int oldIType, int newItype, int hpDelta, double scoreDelta,
-                     int spawnedItype, int teleportTo, int addInventory, int removeInventory) {
-        setOldIType(oldIType);
-        setNewIType(newItype);
-        setScoreDelta(scoreDelta);
-        setSpawns(spawnedItype);
-        setTeleportTo(teleportTo);
-        setAddInventorySlotItem(addInventory);
-        setRemoveInventorySlotItem(removeInventory);
-        setBlocked(blocked);
-        setDefeat(defeat);
-        setVictory(victory);
-    }
-
-    public static YoloEvent create(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone, byte[] inventory) {
-        if(currentState == null || previousState == null)
-            return null;
-
-        if(currentState.getGameTick() != previousState.getGameTick()+1){
-            if(!Agent.UPLOAD_VERSION)
-                System.out.println("No sequential states given!");
-            return null;
-        }
-
-        YoloEvent event2Learn = new YoloEvent();
-
-        // player has lost
-        if ( currentState.getAvatar() == null ||
-                (currentState.isGameOver() &&
-                        currentState.getStateObservation().getGameWinner() != Types.WINNER.PLAYER_WINS) ) {
-            event2Learn.setDefeat(true);
-            return event2Learn;
-        }
-        // player has won
-        else if (currentState.isGameOver() &&
-                currentState.getStateObservation().getGameWinner() == Types.WINNER.PLAYER_WINS) {
-            event2Learn.setVictory(true);
-            return event2Learn;
-        }
-
-        if(previousState == null || previousState.getAvatar() == null){
-            if(!Agent.UPLOAD_VERSION)
-                System.out.println("Did not find State or Avatar");
-            return null;
-        }
-
-        Observation currentAvatar = currentState.getAvatar();
-        Observation previousAvatar = previousState.getAvatar();
-
-        // Action was a movement action, but position did not change and orientation dit not change as well
-        // --> blocked
-        if ( (actionDone == Types.ACTIONS.ACTION_UP || actionDone == Types.ACTIONS.ACTION_DOWN ||
-                actionDone == Types.ACTIONS.ACTION_LEFT || actionDone == Types.ACTIONS.ACTION_RIGHT) &&
-                (currentAvatar.position.equals(previousAvatar.position)) &&
-                ( !currentState.getAvatarOrientation().equals(previousState.getAvatarOrientation()) ) ) {
-            event2Learn.setBlocked(true);
-            return event2Learn;
-        }
-
-        // everything from here is a move action
-        // i.e. the other features like spawner, score delta, etc. are interesting
-        SimpleState previousSimpleState = previousState.getSimpleState();
-        SimpleState currentSimpleState = currentState.getSimpleState();
-
-        // set the hp delta
-        event2Learn.setHpDelta(currentState.getHP() - previousState.getHP());
-
-        // set the score delta
-        event2Learn.setScoreDelta(currentState.getGameScore() - previousState.getGameScore());
-
-        // set old and new iTypes
-        YoloEventHelper.setITypeChange(event2Learn, currentState, previousState);
-
-        // set inventory change (add/remove)
-        YoloEventHelper.setInventoryChange(event2Learn, currentState, previousState);
-
-        // learn the teleport iType if a teleport happend
-        YoloEventHelper.setTeleportIType(event2Learn, currentState, previousState);
-
-        // learn if something has spawend anywhere on the gameboard
-        YoloEventHelper.setSpawnedIType(event2Learn, currentState, previousState);
-
-        return event2Learn;
-    }
-
-    public boolean isDefault() {
-        return this.equals(new YoloEvent());
-    }
+// Following is a constructor
+    /**
+     * Constructon: Initialization of YoloEvent:
+     *     No IType change: byteEvents[0] = -1;
+     *     No Teleport: byteEvents[3] = -1;
+     *     No Inventory change: byteEvents[4] = -1;
+     *     Assume its not a nil action: byteEvents[5] = -1;
+     */
+	public YoloEvent() {
+		super(6,3);
+		byteEvents[0] = -1;	//Standartmaessig keine IType aenderung!
+		byteEvents[3] = -1;	//Standartmaessig kein Teleport!
+		byteEvents[4] = -1;	//Standartmaessig keine Inventarerhoehungen
+		byteEvents[5] = -1;	//Standartmaessig keine Inventarsenkungen
+		boolEvents[2] = true; 	//Initial wird Bewegen auf ja geschaetzt
+		
+	}
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("Event ist: ");
-        if (victory)
-            sb.append("Victory");
-        else if (defeat)
-            sb.append("Defeat");
-        else if (blocked)
-            sb.append("Blocked");
-        else {
-            sb.append("Moved");
-            if (oldIType != UNDEFINED)
-                sb.append(", ").append("old iType: ").append(oldIType);
-            if (newIType != UNDEFINED)
-                sb.append(", ").append("new iType: ").append(newIType);
-            if (hpDelta != NO_CHANGE)
-                sb.append(", ").append("hpDelta: ").append(hpDelta);
-            if (scoreDelta != NO_CHANGE)
-                sb.append(", ").append("scoreDelta: ").append(scoreDelta);
-            if (spawnedIType != UNDEFINED)
-                sb.append(", ").append("spawnedIType: ").append(spawnedIType);
-            if (teleportTo != UNDEFINED)
-                sb.append(", ").append("teleports to: ").append(teleportTo);
-            if (addInventorySlot != UNDEFINED)
-                sb.append(", ").append("adds inventory: ").append(addInventorySlot);
-            if (removeInventorySlot != UNDEFINED)
-                sb.append(", ").append("remove inventory: ").append(removeInventorySlot);
-        }
+        String retVal = "Event ist:";
+        if(byteEventsPropability[0] > MIN_VALUE && byteEvents[0] != -1)
+            retVal += "\t iType change to: " + byteEvents[0];
+        if(byteEventsPropability[1] > MIN_VALUE && byteEvents[1] != 0)
+            retVal += "\n\t Score Aenderung: " + byteEvents[1];
+        if(byteEventsPropability[2] > MIN_VALUE && byteEvents[2] != -1)
+            retVal += "\n\t Spawn Object: " + byteEvents[2];
+        if(byteEventsPropability[4] > MIN_VALUE && byteEvents[4] != -1)
+            retVal += "\n\t Add Inventory: " + byteEvents[2];
+        if(byteEventsPropability[5] > MIN_VALUE && byteEvents[5] != -1)
+            retVal += "\n\t Remove Inventory: " + byteEvents[2];
 
-        return sb.toString();
-    }
+        if(boolEventsPropability[0] > MIN_VALUE && boolEvents[0])
+            retVal += "\n\t kill this object!";
+        if(boolEventsPropability[1] > MIN_VALUE && boolEvents[1])
+            retVal += "\n\t Win the game!";
+        if(boolEventsPropability[2] > MIN_VALUE && boolEvents[2])
+            retVal += "\n\t Move";
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        YoloEvent yoloEvent = (YoloEvent) o;
-
-        // both classify a defeating state
-        if (defeat && yoloEvent.defeat) return true;
-        // both classify a victory state
-        if (victory && yoloEvent.victory) return true;
-        // both classify a blocking state
-        if (blocked && yoloEvent.blocked) return true;
-
-        // a not finishing state (check for the different parts)
-        if (blocked != yoloEvent.blocked) return false;
-        if (oldIType != yoloEvent.oldIType) return false;
-        if (newIType != yoloEvent.newIType) return false;
-        if (hpDelta != yoloEvent.hpDelta) return false;
-        if (scoreDelta != yoloEvent.scoreDelta) return false;
-        if (spawnedIType != yoloEvent.spawnedIType) return false;
-        if (teleportTo != yoloEvent.teleportTo) return false;
-        if (addInventorySlot != yoloEvent.addInventorySlot) return false;
-        return removeInventorySlot == yoloEvent.removeInventorySlot;
-
-    }
-
-    @Override
-    public int hashCode() {
-        // a victory state everything else is irrelevant
-        if (victory)
-            return 0;
-
-        int result = 1;
-
-        // a defeat state, everything else is irrelevant
-        if (defeat)
-            return result;
-
-        result = 31 * result;
-        // a blocking state, everything else is irrelevant
-        if (blocked)
-            return result;
-
-        result += 1;
-        result = 31 * result + (int) oldIType;
-        result = 31 * result + (int) newIType;
-        result = 31 * result + (int) hpDelta;
-        result = 31 * result + (int) scoreDelta;
-        result = 31 * result + (int) spawnedIType;
-        result = 31 * result + (int) teleportTo;
-        result = 31 * result + (int) addInventorySlot;
-        result = 31 * result + (int) removeInventorySlot;
-        return result;
-    }
-
-    public void setOldIType(int iType) {
-        this.oldIType = iType;
-    }
-
-    public void setNewIType(int iType) {
-        this.newIType = iType;
-    }
-
-    public void setHpDelta(int hpDelta) {
-        this.hpDelta = hpDelta;
-    }
-
-    public void setScoreDelta(double scoreDelta) {
-        this.scoreDelta = scoreDelta;
-    }
-
-    public void setSpawns(int spawns) {
-        this.spawnedIType = spawns;
-    }
-
-    public void setTeleportTo(int teleportTo) {
-        this.teleportTo = teleportTo;
-    }
-
-    public void setAddInventorySlotItem(int addInventorySlotItem) {
-        this.addInventorySlot = addInventorySlotItem;
-    }
-
-    public void setRemoveInventorySlotItem(int removeInventorySlotItem) {
-        this.removeInventorySlot = removeInventorySlotItem;
-    }
-
-    public void setDefeat(boolean defeat) {
-        this.defeat = defeat;
-    }
-
-    public void setVictory(boolean victory) {
-        this.victory = victory;
-    }
-
-    public void setBlocked(boolean blocked) {
-        this.blocked = blocked;
+        return retVal;
     }
 
 
-    public int getOldIType() {
-        return oldIType;
+// Following are three update(setters) functions for YoloEvent
+    /**
+     * By calling super class setters and update member variable hasMovedOnce
+     *      updateByteEvents(...)
+     *      updateBoolEvents(...)
+     *      hasMovedOnce |= move
+     * @param newItype chage of the avatar type
+     * @param move a nil action or a specific action
+     * @param scoreDelta score change
+     * @param killed terminal state
+     * @param spawnedItype new game object
+     * @param teleportToItype new game object
+     * @param winGame terminal state
+     * @param addInventory change of the avatar inventory
+     * @param removeInventory change of the avatar inventory
+     */
+	public void update(byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportToItype, boolean winGame, byte addInventory, byte removeInventory){
+		updateByteEvents(newItype, scoreDelta, spawnedItype, teleportToItype, addInventory, removeInventory);
+		updateBoolEvents(killed, winGame, move);
+		this.hasMovedOnce |= move;
+	}
+
+    /**
+     * Call super class setter updateBoolEvent for index 0(killed)
+     * @param kill
+     */
+	public void learnKill(boolean kill) {
+		updateBoolEvent(5,0, kill);
+	}
+
+    /**
+     * Call super class setter updateBoolEvent for index 1(winGame)
+     */
+	public void learnNotWin() {
+		updateBoolEvent(5,1, false);
+	}
+
+
+
+// Following are two "Comparable" functions between "this" Event and "input" Event
+
+    /**
+    * Check if "this" Event and "input" Event are "identical". E.g. if this has an element with its probability of MIN_VALUE,
+    * it would be seen as identical.
+    * @param newItype change of the avatar type
+    * @param move a nil action or a specific action
+    * @param scoreDelta score change
+    * @param killed terminal state
+    * @param spawnedItype new game object
+    * @param teleportTo new game object
+    * @param winGame terminal state
+    * @param addInventory change of the avatar inventory
+    * @param removeInventory change of the avatar inventory
+    * @return boolean: If "this" Event and the input "Event" are identical
+    * @author of documentation: Thomas
+    */
+	public boolean hasValues(byte newItype, boolean move, byte scoreDelta,
+			boolean killed, byte spawnedItype, byte teleportTo,
+			boolean winGame, byte addInventory, byte removeInventory) {
+
+		if(addInventory != byteEvents[4] && byteEventsPropability[4] != MIN_VALUE)
+			return false;
+		
+		if(removeInventory != byteEvents[5] && byteEventsPropability[5] != MIN_VALUE)
+			return false;
+		
+		if(scoreDelta != byteEvents[1] && byteEventsPropability[1] != MIN_VALUE)
+			return false;
+		
+		if(spawnedItype != byteEvents[2] && byteEventsPropability[2] != MIN_VALUE)
+			return false;
+		
+		if(teleportTo != byteEvents[3] && byteEventsPropability[3] != MIN_VALUE)
+			return false;
+		
+		if(newItype != byteEvents[0] && byteEventsPropability[0] != MIN_VALUE)
+			return false;
+		
+		if(move != boolEvents[2] && boolEventsPropability[2] != MIN_VALUE)
+			return false;
+		
+		if(killed != boolEvents[0] && boolEventsPropability[0] != MIN_VALUE)
+			return false;
+		
+		if(winGame != boolEvents[1] && boolEventsPropability[1] != MIN_VALUE)
+			return false;
+		
+		return true;
+	}
+
+    /**
+     * How similar is "this" Event and "input" Event. Allocate for each attribute one bit in the order of importance
+     * @param newItype change of the avatar type
+     * @param push a nil action or a specific action
+     * @param scoreDelta score change
+     * @param killed terminal state
+     * @param spawnedItype new game object
+     * @param teleportTo new game object
+     * @param win terminal statew
+     * @param addInventory change of the avatar inventory
+     * @param removeInventory change of the avatar inventory
+     * @return int likely value from 0 (min) to 511 (max)
+     * @author of documentation: Thomas
+     */
+    public int likelyValue(byte newItype, boolean push, byte scoreDelta,
+                           boolean killed, byte spawnedItype, byte teleportTo, boolean win, byte addInventory, byte removeInventory) {
+        int likely=0,i=0;
+
+        int index_byte[] = {4,5,1,2,3,0};
+        byte input_byte[] = {addInventory,removeInventory,scoreDelta,spawnedItype,teleportTo,newItype};
+        int index_bool[] = {2,0,1};
+        boolean input_bool[] = {push,killed,win};
+
+        for(int j=0;j<6;j++,i++)
+            if(input_byte[j]==byteEvents[index_byte[j]] || byteEventsPropability[index_byte[j]]==MIN_VALUE)
+                likely += 1<<i;
+        for(int j=0;j<3;j++,i++)
+            if(input_bool[j]==boolEvents[index_bool[j]] || boolEventsPropability[index_bool[j]]==MIN_VALUE)
+                likely += 1<<i;
+
+        return likely;
     }
 
-    public int getNewIType() {
-        return newIType;
-    }
+	/**
+	 * Calculates the likelyValue between this and the given YoloEvent.
+	 * @param e The other YoloEvent to compare this YoloEvent to.
+	 * @return integer between 0 (min) and 511 (max)
+	 */
+	public int likelyValue(YoloEvent e) {
+		return likelyValue(e.getIType(), e.getMove(), e.getScoreDelta(), e.getKill(), e.getSpawns(), e.getTeleportTo(), e.getWinGame(), e.getAddInventorySlotItem(), e.getRemoveInventorySlotItem());
+	}
 
-    public int getHpDelta() {
-        return getHpDelta();
-    }
 
-    public double getScoreDelta() {
-        return scoreDelta;
-    }
 
-    public int getSpawnIType() {
-        return spawnedIType;
-    }
+// Following are 9 getters in the order of their index in the Events Array
 
-    public int getTeleportTo() {
-        return teleportTo;
-    }
+	public byte getIType(){
+		return byteEvents[0];
+	}
+	public byte getScoreDelta(){
+		return byteEvents[1];
+	}
+	public byte getSpawns(){
+		return byteEvents[2];
+	}
+	public byte getTeleportTo(){
+		return byteEvents[3];
+	}
+	public byte getAddInventorySlotItem(){
+		return byteEvents[4];
+	}
+	public byte getRemoveInventorySlotItem(){
+		return byteEvents[5];
+	}
+	public boolean getKill(){
+		return boolEvents[0];
+	}
+	public boolean getWinGame(){
+		return boolEvents[1];
+	}
+	public boolean getMove(){
+		return boolEvents[2];
+	}
 
-    public int getAddInventorySlotItem() {
-        return addInventorySlot;
-    }
 
-    public int getRemoveInventorySlotItem() {
-        return removeInventorySlot;
-    }
-
-    public boolean isDefeat() {
-        return defeat;
-    }
-
-    public boolean isVictory() {
-        return victory;
-    }
-
-    public boolean isMoved() {
-        return !blocked;
-    }
-
-    public boolean isBlocked() {
-        return blocked;
-    }
 }

@@ -1,6 +1,5 @@
 package Jaybot.YOLOBOT.Util.Planner;
 
-import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
 import core.game.Observation;
 import Jaybot.YOLOBOT.Agent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.PlayerEvent;
@@ -127,15 +126,14 @@ public class KnowledgeBasedPushSlidePlanner {
 			boolean error = false;
 			for (Observation obs : grid[xStart][yStart]) {
 				if(obs.category != Types.TYPE_AVATAR){
-					InvolvedActors actors = new InvolvedActors(player_itype, obs.itype);
-					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
-					if(event.willCancel(actors, inventory)){
+					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(player_itype, obs.itype, true);
+					if(event.willCancel(inventory)){
 						if(!Agent.UPLOAD_VERSION && DEBUG)
 							System.out.println(obs.itype + " blocks Player " + player_itype);
-						error |= event.willCancel(actors, inventory);
+						error |= event.willCancel(inventory);
 					}else{
 						//Event ist durchfuehrbar: Vielleicht aber aendert es den Itype:
-						int iTypeChange = event.getEvent(actors, inventory).getNewIType();
+						int iTypeChange = event.getEvent(inventory).getIType();
 						if(iTypeChange != -1)
 							player_itype = YoloKnowledge.instance.indexToItype(iTypeChange);
 					}
@@ -191,11 +189,10 @@ public class KnowledgeBasedPushSlidePlanner {
 			for (Observation obs : grid[fromX][fromY]) {
 				//Kann dieser IType auf dem Startfeld stehen?
 				if(obs.category != Types.TYPE_AVATAR){
-					InvolvedActors actors = new InvolvedActors(player_itype, obs.itype);
-					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
-					YoloEvent triggeringEvent = event.getEvent(actors, inventory);
-					if(triggeringEvent.getNewIType() == -1 || YoloKnowledge.instance.indexToItype(triggeringEvent.getNewIType()) == player_itype)
-						error |= event.willCancel(actors, inventory);
+					PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(player_itype, obs.itype, true);
+					YoloEvent triggeringEvent = event.getEvent(inventory);
+					if(triggeringEvent.getIType() == -1 || YoloKnowledge.instance.indexToItype(triggeringEvent.getIType()) == player_itype)
+						error |= event.willCancel(inventory) && event.getObserveCount() > 0;
 					else
 						error = true;
 				}
@@ -205,10 +202,9 @@ public class KnowledgeBasedPushSlidePlanner {
 				//Kann er zusaetzlich auch auf das Zielfeld gehen? 
 				for (Observation obs2 : grid[toX][toY]) {
 					if(obs2.category != Types.TYPE_AVATAR){
-						InvolvedActors actors = new InvolvedActors(player_itype, obs2.itype);
-						PlayerEvent event = YoloKnowledge.instance.getPlayerEvent();
-						YoloEvent triggeringEvent = event.getEvent(actors, inventory);
-						error |= event.willCancel(actors, inventory);
+						PlayerEvent event = YoloKnowledge.instance.getPlayerEvent(player_itype, obs2.itype, true);
+						YoloEvent triggeringEvent = event.getEvent(inventory);
+						error |= event.willCancel(inventory) && event.getObserveCount() > 0;
 					}
 				}
 			}
