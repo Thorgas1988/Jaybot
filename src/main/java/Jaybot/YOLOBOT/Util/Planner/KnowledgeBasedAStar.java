@@ -69,7 +69,6 @@ public class KnowledgeBasedAStar {
 		moveDirectionInverse = false;
 
 		ArrayList<ACTIONS> actions = yoloState.getAvailableActions();
-		//TODO use action?
 		int actionsSize = actions.size() - (actions.contains(ACTIONS.ACTION_USE)?1:0);
 		possibleMovesX = new int[actionsSize];
 		possibleMovesY = new int[actionsSize];

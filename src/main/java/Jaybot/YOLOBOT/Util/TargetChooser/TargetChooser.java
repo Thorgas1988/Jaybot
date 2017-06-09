@@ -73,8 +73,12 @@ public class TargetChooser {
         // TODO: This seems not correct... Always changing targets may not be the best.
         changeTarget(state);
 
-        //Walking towards an unseen stochastic NPC --> Increase Rollouts!
-        MCTHandler.largerRollouts = lastTarget != null && lastTarget.isUnseen() && YoloKnowledge.instance.isStochasticEnemy(YoloKnowledge.instance.itypeToIndex(lastTarget.getObs().itype)) && lastTarget.getDistance() < 10;
+        if (lastTarget != null && lastTarget.isUnseen() && YoloKnowledge.instance.isStochasticEnemy(YoloKnowledge.instance.itypeToIndex(lastTarget.getObs().itype)) && lastTarget.getDistance() < 10) {
+            //Walking towards an unseen stochastic NPC --> Increase Rollouts!
+            MCTHandler.largerRollouts = true;
+        } else {
+            MCTHandler.largerRollouts = false;
+        }
     }
 
     private void changeTarget(YoloState state) {
@@ -160,11 +164,11 @@ public class TargetChooser {
         if (bestTarged.getObs().category == Types.TYPE_NPC) {
             aStarHeuristic.disable();
             npcHeuristic.setNpc(bestTarged.getObs().obsID, kBA.distance, kBA.interpretedAsWall);
-            npcHeuristic.setTargetToUse(bestTarged.isUseable());
+            npcHeuristic.setTargetIsToUse(bestTarged.isUseable());
 
         } else {
             aStarHeuristic.setDistance(kBA.distance, kBA.interpretedAsWall, bestX, bestY, bestTarged.getObs().itype);
-            aStarHeuristic.setTargetToUse(bestTarged.isUseable());
+            aStarHeuristic.setTargetIsToUse(bestTarged.isUseable());
             npcHeuristic.disable();
         }
         MCTHandler.scoreLookaheadHeuristic.refreshWalls(kBA.interpretedAsWall);
@@ -427,6 +431,7 @@ public class TargetChooser {
         target.setIsUseable(useActionEffective);
         target.setUnseen(notSeenYet);
         target.setDistance(distanceToAvatar);
+        ;
         target.setScoreIncrease(gotScoreThroughUseAction || scoreIncrease);
         return prioValue;
     }

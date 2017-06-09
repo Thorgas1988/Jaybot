@@ -4,16 +4,15 @@ import Jaybot.YOLOBOT.YoloState;
 import tools.Vector2d;
 
 public abstract class IModdableHeuristic extends IHeuristic {
-	protected boolean targetToUse;
+	protected boolean targetIsToUse;
 	
 	public abstract double getModdedHeuristic(YoloState state, int trueX, int trueY, Vector2d avatarOrientation);
-
-	public void setTargetToUse(boolean value) {
-		targetToUse = value;
+	
+	public void setTargetIsToUse(boolean value){
+		targetIsToUse = value;
 	}
-
-	public boolean isTargetToUse() {
-		return targetToUse;
+	public boolean getZargetIsToUse(){
+		return targetIsToUse;
 	}
 
 	public abstract boolean canStepOn(int myX, int myY);

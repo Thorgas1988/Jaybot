@@ -48,8 +48,8 @@ public class AStarDistanceHeuristic extends IModdableHeuristic {
 
 		//Calculate targetReached Early:
 		int mask = state.getSimpleState().getMask(targetX, targetY);
-        if (targetToUse && (mask & YoloKnowledge.instance.getFromAvatarMask()) != 0) {
-            //There is a FromAvatar at the target!
+		if(targetIsToUse && (mask & YoloKnowledge.instance.getFromAvatarMask()) != 0){
+			//There is a FromAvatar at the target!
 			return 0;
 		}
 		if((mask & targetItypeIndexMask) == 0 ){
