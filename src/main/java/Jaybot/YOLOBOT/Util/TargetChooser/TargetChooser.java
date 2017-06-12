@@ -83,7 +83,7 @@ public class TargetChooser {
         kBA.setCountFoundItypes(true);
         singleObjectCooldownSetCleanup(state);
         kBA.setBlacklistedObjects(singleObjectCooldownSet.keySet());
-        kBA.calculate(state.getAvatarX(), state.getAvatarY(),
+        if(state!=null) kBA.calculate(state.getAvatarX(), state.getAvatarY(),
                 state.getAvatar().itype, new int[0], false, true, false);
         kBA.setBlacklistedObjects(null);
         deadEndHeuristic.setFieldsReached(kBA.fieldsReachedCount);
@@ -307,7 +307,7 @@ public class TargetChooser {
         int slot = event.getAddInventorySlotItem();
         boolean winState = event.isVictory();
         boolean scoreIncrease = event.getScoreDelta() > 0;
-        boolean notSeenYet = !pEvent.hasEventForActors(actors);
+        boolean notSeenYet = !(pEvent.getObserveCount(actors)>3);
         boolean useActionEffective = YoloKnowledge.instance
                 .canInteractWithUse(state.getAvatar().itype, observation.itype);
         boolean inventoryIncrease = event.getAddInventorySlotItem() != -1;
@@ -316,7 +316,7 @@ public class TargetChooser {
         boolean willCancel = event.isBlocked();
         YoloEvent blockedEvent = new YoloEvent();
         blockedEvent.setBlocked(true);
-        boolean isProbablyWall = (double) pEvent.classLabelCount(blockedEvent) / (double) pEvent.classLabelCount() > 0.95;
+        boolean isProbablyWall = (double) pEvent.getCancelCount(actors) / (double) pEvent.getObserveCount(actors) > 0.90;
         boolean killedOnColision = event.isDefeat();
         boolean isPortal = observation.category == Types.TYPE_PORTAL;
         boolean iTypeChange = event.getNewIType() != -1;
@@ -340,7 +340,6 @@ public class TargetChooser {
         }
         boolean isInventoryFull = false;
         if (inventoryIncrease) {
-
             isInventoryFull = YoloKnowledge.instance.getInventoryMax(slot) == state
                     .getInventoryArray()[slot];
         } else {

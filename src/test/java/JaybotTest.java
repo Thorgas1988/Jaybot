@@ -24,8 +24,8 @@ public class JaybotTest {
     };
 
     private static final int seed = (new Random()).nextInt();
-    private static final byte gameIdx = 0;//18//28//29//31
-    private static byte levelIdx = 0;
+    private static final byte gameIdx = 25;//18//28//29//31
+    private static byte levelIdx = 1;
     private static String game = gamesPath + games[gameIdx] + ".txt";
     private static String level1 = gamesPath + games[gameIdx] + "_lvl" + levelIdx + ".txt";
     private static final String recordLevelFile = generateLevelPath + games[gameIdx] + "_glvl.txt";
@@ -48,11 +48,11 @@ public class JaybotTest {
     @Test
     @Ignore
     public void runGameInLoop() {
-        int times = 30;
+        int times = 5;
         int wins = 0;
         int disq = 0;
         int loose = 0;
-        for (int j = 0; j < 4; j++)
+        for (int j = 0; j < 1; j++)
         {
             for (int i = 0; i < times; i++) {
                 double[] testresult = ArcadeMachine.runOneGame(game, level1, false, Agent.class.getCanonicalName(), null, seed, 0);
@@ -68,7 +68,6 @@ public class JaybotTest {
                 else {
                     loose++;
                 }
-
                 //wrap around
                 if (levelIdx == 4) {
                     levelIdx = 0;
@@ -85,12 +84,47 @@ public class JaybotTest {
     }
 
     @Test
+    @Ignore
+    public void runOneGameForXTimes(){
+        int gameIndex = 26;
+        int levelIndex = 2;
+        int times = 5;
+        System.out.println("# " + gameIndex + " " + games[gameIndex]);
+        for(int i=0;i<times;i++){
+            game = gamesPath + games[gameIndex] + ".txt";
+            level1 = gamesPath + games[gameIndex] + "_lvl" + levelIndex + ".txt";
+            System.out.print((i+1)+"-th time:");
+            try{
+                ArcadeMachine.runOneGame(game, level1, false, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
+            }catch(Exception e){
+                System.out.print("Fail:");
+                System.out.println(e.toString());
+            }
+        }
+    }
+
+
+    @Test
     @Ignore("Only activate if you want to test all games at once! Takes a while.")
     public void shouldRunAllGames() {
-        for (int i = 0; i < games.length; i++) {
+        for (int i = 16; i < games.length; i++) {
             game = gamesPath + games[i] + ".txt";
-            level1 = gamesPath + games[i] + "_lvl" + levelIdx + ".txt";
-            ArcadeMachine.runOneGame(game, level1, true, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
+            for(int j=0;j<1;j++){
+                level1 = gamesPath + games[i] + "_lvl" + j + ".txt";
+                System.out.println("# " + i);
+                System.out.println(games[i] + " Level " + j + ":");
+                for(int t = 0;t<5;t++){
+                    System.out.print((t+1)+"-th time:");
+                    try{
+                        ArcadeMachine.runOneGame(game, level1, false, Agent.class.getCanonicalName(), (String) recordActionsFile, seed, 0);
+                    }catch(Exception e){
+                        System.out.println("Fail!");
+                        System.out.println(e.toString());
+                    }
+                }
+                System.out.println();
+            }
+
         }
     }
 

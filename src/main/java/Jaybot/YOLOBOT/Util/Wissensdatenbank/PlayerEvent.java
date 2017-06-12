@@ -2,6 +2,9 @@ package Jaybot.YOLOBOT.Util.Wissensdatenbank;
 
 import Jaybot.YOLOBOT.Util.RandomForest.InvolvedActors;
 import Jaybot.YOLOBOT.Util.RandomForest.RandomForest;
+import com.sun.corba.se.spi.activation.InvalidORBid;
+
+import java.util.HashMap;
 
 public class PlayerEvent implements YoloEventController {
 
@@ -11,14 +14,18 @@ public class PlayerEvent implements YoloEventController {
      */
 
     private static final boolean DEBUG = true;
-    private RandomForest randomForest;
+    private RandWald randWald;
+    private HashMap<InvolvedActors,Integer> cancelCount;
+    private HashMap<InvolvedActors,Integer> observeCount;
 
     /**
      * Constructor:
      * Initialize all member variables. Int to 0, new class instance.
      */
-    public PlayerEvent(int maxIndices) {
-        randomForest = new RandomForest(maxIndices, 100);
+    public PlayerEvent(int treenum, int treesize) {
+        randWald = new RandWald(treenum, treesize);
+        observeCount = new HashMap<>();
+        cancelCount = new HashMap<>();
     }
 
     /**
@@ -42,31 +49,63 @@ public class PlayerEvent implements YoloEventController {
      * @param addInventory    change of the avatar inventory
      * @param removeInventory change of the avatar inventory
      */
-    public void learnEventHappened(InvolvedActors actors, byte[] inventoryItems, byte newItype, boolean move, byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo, boolean winGame, byte addInventory, byte removeInventory) {
-        YoloEvent event = new YoloEvent();
-        event.setNewIType(newItype);
-        event.setOldIType(actors.getPlayerIType());
-        event.setAddInventorySlotItem(addInventory);
-        event.setDefeat(killed);
-        event.setBlocked(!move);
-        event.setRemoveInventorySlotItem(removeInventory);
-        event.setScoreDelta(scoreDelta);
-        event.setSpawns(spawnedItype);
-        event.setTeleportTo(teleportTo);
-        event.setVictory(winGame);
+    public void learnEventHappened(InvolvedActors actors, byte[] inventoryItems,byte newItype, boolean move,
+                                   byte scoreDelta, boolean killed, byte spawnedItype, byte teleportTo,
+                                   boolean winGame, byte addInventory, byte removeInventory, byte pusher) {
+//        YoloEvent event = new YoloEvent();
+//        event.setNewIType(newItype);
+//        event.setOldIType(actors.getPlayerIType());
+//        event.setAddInventorySlotItem(addInventory);
+//        event.setDefeat(killed);
+//        event.setBlocked(!move);
+//        event.setRemoveInventorySlotItem(removeInventory);
+//        event.setScoreDelta(scoreDelta);
+//        event.setSpawns(spawnedItype);
+//        event.setTeleportTo(teleportTo);
+//        event.setVictory(winGame);
+        if(observeCount.containsKey(actors)) observeCount.replace(actors,observeCount.get(actors)+1);
+        else observeCount.put(actors,1);
 
-        randomForest.train(actors, inventoryItems, event);
+        if(!move){
+            if(cancelCount.containsKey(actors)) cancelCount.replace(actors,cancelCount.get(actors)+1);
+            else cancelCount.put(actors,1);
+        }
+        randWald.train(actors,inventoryItems,winGame,killed,!move,newItype,scoreDelta,0,spawnedItype,teleportTo,addInventory,removeInventory,pusher);
+
     }
 
     public void learnEventHappened(InvolvedActors actors, byte[] inventoryItems, YoloEvent event) {
-        randomForest.train(actors, inventoryItems, event);
+        if(observeCount.containsKey(actors)) observeCount.replace(actors,observeCount.get(actors)+1);
+        else observeCount.put(actors,1);
+
+        if(event.isBlocked()){
+            if(cancelCount.containsKey(actors)) cancelCount.replace(actors,cancelCount.get(actors)+1);
+            else cancelCount.put(actors,1);
+        }
+        randWald.train(actors,inventoryItems,event.isVictory(),event.isDefeat(),event.isBlocked(),(byte)event.getNewIType(),
+                (int)event.getScoreDelta(),event.getHpDelta(),(byte)event.getSpawnIType(),(byte)event.getTeleportTo(),
+                (byte)event.getAddInventorySlotItem(),(byte)event.getRemoveInventorySlotItem(),(byte)event.getPusher());
+    }
+
+    public void trainCancle(InvolvedActors actors, byte[] inventoryItems){
+        randWald.trainCancel(actors,inventoryItems);
+        if(observeCount.containsKey(actors)) observeCount.replace(actors,observeCount.get(actors)+1);
+        else observeCount.put(actors,1);
+        if(cancelCount.containsKey(actors)) cancelCount.replace(actors,cancelCount.get(actors)+1);
+        else cancelCount.put(actors,1);
+    }
+
+    public void trainVictory(InvolvedActors actors, byte[] inventoryItems){
+        randWald.trainVictory(actors,inventoryItems);
+        if(observeCount.containsKey(actors)) observeCount.replace(actors,observeCount.get(actors)+1);
+        else observeCount.put(actors,1);
     }
 
     /**
      * @return boolean if this move is beeing blocked
      */
     public boolean willCancel(InvolvedActors actors, byte[] inventoryItems) {
-        YoloEvent event = randomForest.getEvent(actors, inventoryItems);
+        YoloEvent event = randWald.predict(actors, inventoryItems);
         return event.isBlocked();
     }
 
@@ -75,18 +114,15 @@ public class PlayerEvent implements YoloEventController {
      * @return The YoloEvent with the highest probability
      */
     public YoloEvent getEvent(InvolvedActors actors, byte[] inventoryItems) {
-        return randomForest.getEvent(actors, inventoryItems);
+        return randWald.predict(actors, inventoryItems);
     }
 
-    public boolean hasEventForActors(InvolvedActors actors) {
-        return randomForest.hasEventForActors(actors);
+    public int getObserveCount(InvolvedActors actor){
+        return observeCount.getOrDefault(actor,0);
     }
 
-    public int classLabelCount() {
-        return randomForest.classLabelCount();
+    public int getCancelCount(InvolvedActors actor){
+        return cancelCount.getOrDefault(actor,0);
     }
 
-    public int classLabelCount(YoloEvent event) {
-        return randomForest.classLabelCount(event);
-    }
 }

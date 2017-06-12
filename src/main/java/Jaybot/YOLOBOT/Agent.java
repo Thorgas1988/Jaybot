@@ -22,7 +22,7 @@ import java.util.List;
 public class Agent extends AbstractPlayer {
 
 	public final static boolean UPLOAD_VERSION = true;
-	public final static boolean DRAW_TARGET_ONLY = false;
+	public final static boolean DRAW_TARGET_ONLY = true;
 	public final static boolean FORCE_PAINT = false;
 	public final static boolean VIEW_ADVANCES = false;
 	public static final double PAINT_SCALE = 1;

@@ -13,7 +13,6 @@ public class ClassLabelMap {
 
     public void put(TreePath path, YoloEvent classEvent) {
         Map<YoloEvent, Integer> hit = classes.get(path);
-
         if (hit == null) {
             hit = new HashMap<>();
             hit.put(classEvent, 1);
@@ -25,7 +24,6 @@ public class ClassLabelMap {
                 hit.put(classEvent, count + 1);
             }
         }
-
         classes.put(path, hit);
     }
 

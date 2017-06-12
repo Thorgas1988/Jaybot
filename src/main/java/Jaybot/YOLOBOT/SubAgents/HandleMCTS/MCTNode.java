@@ -33,7 +33,8 @@ public abstract class MCTNode {
 	 */
 	protected ArrayList<ACTIONS> validActions;
 	private boolean forceValidActionsDontChange;
-	
+
+
 	public MCTNode(ACTIONS action, YoloState state){
 		setState(state);
 		this.action = action;
@@ -125,6 +126,7 @@ public abstract class MCTNode {
 		return this;
 	}
 
+
 	private void doFullInit(YoloState state) {
 		validActions = new ArrayList<ACTIONS>(MCTHandler.rootState.getAvailableActions(true));
 		getValidActions(state);
@@ -149,8 +151,6 @@ public abstract class MCTNode {
 	protected abstract void createPseudoChildren();
 
 	protected abstract void setState(YoloState state) ;
-
-
 
 	public YoloState simulate(boolean useScoreLookahead, boolean forceNoRandom) {
 		int currentDepth = 0;
@@ -366,11 +366,16 @@ public abstract class MCTNode {
         //System.out.println("stochasticKiller:"+stochasticKiller);
         //System.out.println("CanInterActWithUse: "+YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller));
         //TODO canInteractWithUse always false?
-        boolean canUse = shouldMove && validActions.contains(ACTIONS.ACTION_USE) && YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller) && observationIsInFrontOfAvatar(curState, stochasticKiller);
+        boolean  canUse = shouldMove &&  validActions.contains(ACTIONS.ACTION_USE) &&
+					YoloKnowledge.instance.canInteractWithUse(curState.getAvatar().itype, stochasticKiller) &&
+					observationIsInFrontOfAvatar(curState, stochasticKiller);
+
 
         for (Iterator<ACTIONS> iterator = validActions.iterator(); iterator.hasNext();) {
             ACTIONS actions = iterator.next();
-            if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) || YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) || couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
+            if(YoloKnowledge.instance.actionsLeadsOutOfBattlefield(curState, actions) ||
+					YoloKnowledge.instance.moveWillCancel(curState,actions, true, false) ||
+					couldGetKilledByEnemyIfIUseAction(curState, actions, shouldMove, canUse)) {
 				iterator.remove();
 				childrenFreeCount--;
 			}
@@ -378,7 +383,7 @@ public abstract class MCTNode {
 		
 		if(validActions.isEmpty())
 			return new ArrayList<ACTIONS>(curState.getAvailableActions());
-		
+
 		return new ArrayList<ACTIONS>(validActions);
 	}
 
@@ -416,20 +421,19 @@ public abstract class MCTNode {
         if (!YoloKnowledge.instance.positionAufSpielfeld(playerX + x, playerY + y))
             return false;
 
+
         if (observationGridContainsIType(curState, playerX + x, playerY + y, observationIType))
             return true;
 
         if (YoloKnowledge.instance.hasRangedUseEffect()) {
             for (int i = 2; YoloKnowledge.instance.positionAufSpielfeld(playerX + i * x, playerY + i * y); i++) {
                 if (observationGridContainsIType(curState, playerX + i * x, playerY + i * y, observationIType)) {
-                    System.out.println("recognized observation with distance" + i);
+                    //System.out.println("recognized observation with distance" + i);
                     return true;
                 }
             }
         }
-
         return false;
-
 
         //return  curState.getObservationGrid()[x][y].contains(observation);
 

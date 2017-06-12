@@ -1,0 +1,206 @@
+# 1 bait 
+Level 3:
+1-th time:Result (1->win; 0->lose): Player0:0, Player0-Score:27.0, timesteps:2000
+2-th time:Result (1->win; 0->lose): Player0:0, Player0-Score:27.0, timesteps:2000
+3-th time:Result (1->win; 0->lose): Player0:0, Player0-Score:27.0, timesteps:2000
+
+# 2 blacksmoke
+Never win
+? Take direction of bad monsters into account
+
+# 3 boloadventures
+Never win
+
+# 4 boulderchase 
+Level 0:
+Player0:0, Player0-Score:20.0, timesteps:2000
+Player0:0, Player0-Score:6.0, timesteps:82
+Player0:1, Player0-Score:26.0, timesteps:778
+Level 1:
+Player0:0, Player0-Score:-1.0, timesteps:50
+Player0:1, Player0-Score:22.0, timesteps:548
+Player0:1, Player0-Score:22.0, timesteps:435
+Level 2:
+Player0:0, Player0-Score:18.0, timesteps:128
+Player0:0, Player0-Score:22.0, timesteps:2000
+Player0:1, Player0-Score:35.0, timesteps:379
+Level 3:
+Player0:0, Player0-Score:26.0, timesteps:2000
+Player0:0, Player0-Score:4.0, timesteps:35
+Player0:0, Player0-Score:10.0, timesteps:2000
+Level 4:
+Player0:0, Player0-Score:6.0, timesteps:41
+Player0:0, Player0-Score:4.0, timesteps:37
+Player0:1, Player0-Score:26.0, timesteps:553
+? Avatar can be killed by stone,monsters, and if avatar is locked by stones in a closed area it also loses
+
+
+# 5 boulderdash 
+Level 0: never win
+Level 1: never win 
+Level 2:
+Player0:1, Player0-Score:21.0, timesteps:244
+Player0:0, Player0-Score:20.0, timesteps:333
+Player0:0, Player0-Score:19.0, timesteps:307
+Level 3: never win
+Level 4: never win
+
+
+# 6 brainman  Puzzle
+Level 0:
+Player0:1, Player0-Score:35.0, timesteps:83
+Player0:1, Player0-Score:35.0, timesteps:83
+Player0:1, Player0-Score:35.0, timesteps:85
+Level 1:
+Player0:0, Player0-Score:30.0, timesteps:2000
+Player0:0, Player0-Score:30.0, timesteps:2000
+Player0:0, Player0-Score:30.0, timesteps:2000
+Level 2:
+Player0:0, Player0-Score:52.0, timesteps:2000
+Player0:0, Player0-Score:52.0, timesteps:2000
+Player0:0, Player0-Score:52.0, timesteps:2000
+Level 3:
+Player0:0, Player0-Score:36.0, timesteps:2000
+Player0:0, Player0-Score:36.0, timesteps:2000
+Player0:0, Player0-Score:36.0, timesteps:2000
+Level 4:
+Player0:1, Player0-Score:32.0, timesteps:68
+Player0:1, Player0-Score:32.0, timesteps:67
+Player0:1, Player0-Score:32.0, timesteps:68
+
+# 7 butterflies
+all wins
+
+# 8 cakybaky
+never win
+minus score
+Ordering of collecting needed, Target Chooser!!!
+
+
+# 9 camelRace
+Level 0: never win
+Level 1: never win
+Level 2: never win
+Level 3: all wins
+Level 4: never win 
+Only has to run to the goal directly, don't have to take any random action... tradeoff between exploration and exploitation
+
+
+
+# 10 catapults
+all wins
+
+# 11 chase
+never win
+complicated
+
+
+# 12 chipschallenge
+Level 0-3: all wins
+Level 4: never win, too complicated
+puzzle
+
+
+
+# 13 chopper
+Level 0-2: all wins
+Level 3-4: never win
+
+# 14 cookmepasta
+Level 0: all wins
+Level 1-4: never win
+puzzle-->ordering needed to be token into account
+
+
+# 15 crossfire 
+Level 0: wins
+Level 1: no surely win, because of the some relation between stochastic map and the world setting
+Level 2-4: wins
+
+# 16 defem Level 0
+never win
+50 points needed to win(kill all the monsters)
+the yolo agent manages it only to 49
+
+# 17 defender Level 0:
+Termination set: Avatar and cities limit=0 false
+                 Ticks=1000 true
+
+# 18 digdug Level 0:
+Overspent: Player0:0, Player0-Score:4.0, timesteps:1059
+Result (1->win; 0->lose): Player0:0, Player0-Score:0.0, timesteps:58
+Overspent: Player0:0, Player0-Score:30.0, timesteps:2000
+Overspent: Player0:0, Player0-Score:10.0, timesteps:767
+Overspent: Player0:0, Player0-Score:6.0, timesteps:739
+
+
+# 19 eggomania Level 0:
+all wins
+
+# 20 enemycitadel Level 0:
+Overspent, never wins
+puzzle+!
+
+
+# 21 escape Level 0:
+all wins
+
+
+# 22 factorymanager Level 0:
+Overspent, all wins
+
+
+# 23 firecaster Level 0:
+Overspent, 1 win, 4 loses
+puzzle with special mechanism...
+shoot could make brick into unmovable and unchangable stones...
+
+
+# 24 firestorms Level 0:
+all wins 
+
+# 25 frogs Level 0:
+never wins
+Cross the river and avoid to be crashed.
+Too many "Monsters" and in a time period, the avatar should only move in one dimension
+
+# 26 gymkhana Level 0:
+never wins
+Similar as # 25
+One should take the speed of bad monster and good monster into account.
+puzzle+
+
+# 27 hungrybirds Level 0:
+all wins 
+
+# 28 iceandfire Level 0:
+all wins 
+
+# 29 infection Level 0:
+all wins 
+
+# 30 intersection Level 0:
+all wins
+
+# 31 jaws Level 0:
+never wins
+ran onto enemies???
+
+
+# 32 labyrinth Level 0:
+all wins
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -25,14 +25,15 @@ public class YoloEvent {
     private int teleportTo = UNDEFINED;
     private int addInventorySlot = UNDEFINED;
     private int removeInventorySlot = UNDEFINED;
+    private int pusher = UNDEFINED; //0 up, 1 down, 2 left, 3 right
 
 
     public YoloEvent() {
     }
 
     // Only needed for the random forest unit tests
-    public YoloEvent(boolean blocked, boolean defeat, boolean victory, int oldIType, int newItype, int hpDelta, double scoreDelta,
-                     int spawnedItype, int teleportTo, int addInventory, int removeInventory) {
+    public YoloEvent(boolean blocked, boolean defeat, boolean victory, int oldIType, int newItype, int hPDelta, double scoreDelta,
+                     int spawnedItype, int teleportTo, int addInventory, int removeInventory, int pusher) {
         setOldIType(oldIType);
         setNewIType(newItype);
         setScoreDelta(scoreDelta);
@@ -43,6 +44,9 @@ public class YoloEvent {
         setBlocked(blocked);
         setDefeat(defeat);
         setVictory(victory);
+        setPusher(pusher);
+        setHpDelta(hPDelta);
+
     }
 
     public static YoloEvent create(YoloState currentState, YoloState previousState, Types.ACTIONS actionDone, byte[] inventory) {
@@ -252,6 +256,7 @@ public class YoloEvent {
         this.blocked = blocked;
     }
 
+    public void setPusher(int push){this.pusher = push;}
 
     public int getOldIType() {
         return oldIType;
@@ -284,6 +289,8 @@ public class YoloEvent {
     public int getRemoveInventorySlotItem() {
         return removeInventorySlot;
     }
+
+    public int getPusher(){return this.pusher;};
 
     public boolean isDefeat() {
         return defeat;

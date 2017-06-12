@@ -28,7 +28,6 @@ public class InvolvedActors {
         if (o == null || getClass() != o.getClass()) return false;
 
         InvolvedActors that = (InvolvedActors) o;
-
         if (iTypePlayer != that.iTypePlayer) return false;
         return iTypeOtherCollisionActor == that.iTypeOtherCollisionActor;
     }

@@ -154,7 +154,7 @@ public class StochasticKillmap {
 
 
 	private void setCanReach(int x, int y, int steps){
-		killmap[x][y] = killmap[x][y] | 1<<steps;
+		if(x>=0 && y>=0 && x<killmap.length && y<killmap[0].length) killmap[x][y] = killmap[x][y] | 1<<steps;
 	}
 
 	public int getMinDistanceToEnemy(int x, int y) {
