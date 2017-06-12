@@ -201,6 +201,7 @@ public class RandWald {
 
     }
 
+    @SuppressWarnings("unchecked")
     public class leaf{
 
         private HashMap<Byte,Integer>[] byteMaps;
