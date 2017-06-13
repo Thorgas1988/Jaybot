@@ -231,6 +231,10 @@ public class YoloKnowledge {
 							{
 								for (int npcNr2 = 0; npcNr2 < nowNpcs.length; npcNr2++)
 								{
+									if (nowNpcs[npcNr2].isEmpty()) {
+										continue;
+									}
+
 									Observation firstOfType2 = nowNpcs[npcNr2].get(0);
 									int itypeIndex2 = itypeToIndex(firstOfType2.itype);
 
@@ -242,6 +246,10 @@ public class YoloKnowledge {
 								}
 							}
 							simulatedState = simulatedState.copyAdvanceLearn(ACTIONS.ACTION_NIL);
+						}
+
+						if (positions[0]==null || positions[1]==null || positions[2]==null) {
+							continue;
 						}
 
 						double zeroToFirstDistance = positions[0].dist(positions[1]);
@@ -1524,7 +1532,7 @@ public class YoloKnowledge {
 		//if (canBeKilledByEnemyNearby(currentState, x, y) != null)
 		//	return true;
 
-		calculateContinuousKillerMap(currentState, x, y);
+		//calculateContinuousKillerMap(currentState, x, y);
 
 		int mask = currentState.getSimpleState().getMask(x, y);
 
