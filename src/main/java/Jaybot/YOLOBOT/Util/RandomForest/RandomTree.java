@@ -3,6 +3,11 @@ package Jaybot.YOLOBOT.Util.RandomForest;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloEvent;
 import Jaybot.YOLOBOT.Util.Wissensdatenbank.YoloKnowledge;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+
 /**
  * Created by Torsten on 17.05.17.
  */
@@ -10,13 +15,22 @@ public class RandomTree {
 
     private final RandomCondition[] conditions;
     private final ClassLabelMap[][] classes = new ClassLabelMap[YoloKnowledge.INDEX_MAX][YoloKnowledge.INDEX_MAX];
+    private final int[] indices;
 
     public RandomTree(int treeSize) {
         conditions = new RandomCondition[treeSize];
+        indices = new int[treeSize];
+
+        List<Integer> possibleIndices = new LinkedList<>();
+        for (int i=0; i<YoloKnowledge.INDEX_MAX; i++) {
+            possibleIndices.add(i);
+        }
+        Collections.shuffle(possibleIndices);
 
         for (int i=0; i<treeSize; i++) {
             // we assume the count of inventory items can only be positive.
             conditions[i] = new RandomCondition(true);
+            indices[i] = possibleIndices.get(i).intValue();
         }
     }
 
