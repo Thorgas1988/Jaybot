@@ -83,7 +83,7 @@ public class YoloKnowledge {
 	private YoloState initialState;
 
 	public boolean learnDeactivated;
-	private PlayerEvent playerEventController = new PlayerEvent(INDEX_MAX);
+	private PlayerEvent playerEventController = new PlayerEvent(3);
 	private PlayerUseEvent[][] useEffects;
 
 	/**
