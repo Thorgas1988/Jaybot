@@ -1442,10 +1442,10 @@ public class YoloKnowledge {
 			return true;
 
 		//TODO: currently turned off because of calculation of killer map
-		//if (canBeKilledByEnemyNearby(currentState, x, y) != null)
-		//	return true;
+		if (canBeKilledByEnemyNearby(currentState, x, y) != null)
+			return true;
 
-		calculateContinuousKillerMap(currentState, x, y);
+//		calculateContinuousKillerMap(currentState, x, y);
 
 		int mask = currentState.getSimpleState().getMask(x, y);
 
@@ -1741,150 +1741,150 @@ public class YoloKnowledge {
 		return null;
 	}
 
-	public void calculateContinuousKillerMap(YoloState currentState, int x, int y)
-	{
-		//reset old values
-		for (int i = 0; i < MAX_X; i++) {
-			for (int j = 0; j < MAX_Y; j++) {
-				//TODO: if you want to paint, you have to disable this
-				continuousKillerMap[i][j] = false;
-			}
-		}
-
-		ArrayList<Observation>[][] grid = currentState.getObservationGrid();
-		if(positionAufSpielfeld(x, y)) {
-			ArrayList<Observation> observations = grid[x][y];
-			for (Observation observation : observations) {
-				int obsIndex = itypeToIndex(observation.itype);
-				if (isContinuousMovingEnemy(obsIndex))
-				{
-					int halfBlock = currentState.getBlockSize()/2;
-					double midX = observation.position.x + halfBlock;
-					double midY = observation.position.y + halfBlock;
-
-					double midInBlocksX = (int)(midX / currentState.getBlockSize());
-					double midInBlocksY = (int)(midY / currentState.getBlockSize());
-
-					int gridX = (int)midInBlocksX;
-					int gridY = (int)midInBlocksY;
-
-					//###
-					//#0#
-					//###
-					continuousKillerMap[x][y] = true;
-					if (midX - (gridX * currentState.getBlockSize()) < halfBlock) {
-						if (midY - (gridY * currentState.getBlockSize()) < halfBlock) {
-							if (positionAufSpielfeld(x - 1, y - 1)) {
-								//0##
-								//###
-								//###
-								continuousKillerMap[x - 1][y - 1] = true;
-								if (positionAufSpielfeld(x - 2, y - 2)) {
-									//0###
-									//####
-									//####
-									//####
-									continuousKillerMap[x - 2][y - 2] = true;
-								}
-							}
-							if (positionAufSpielfeld(x, y - 1)) {
-								//#0#
-								//###
-								//###
-								continuousKillerMap[x][y - 1] = true;
-							}
-						} else {
-							if (positionAufSpielfeld(x - 1, y + 1)) {
-								//###
-								//###
-								//0##
-								continuousKillerMap[x - 1][y + 1] = true;
-								if (positionAufSpielfeld(x - 2, y + 2)) {
-									//####
-									//####
-									//####
-									//0###
-									continuousKillerMap[x - 2][y + 2] = true;
-								}
-							}
-							if (positionAufSpielfeld(x, y + 1)) {
-								//###
-								//###
-								//#0#
-								continuousKillerMap[x][y + 1] = true;
-							}
-						}
-
-						if (positionAufSpielfeld(x - 1, y)) {
-							//###
-							//0##
-							//###
-							continuousKillerMap[x - 1][y] = true;
-						}
-					}
-					else
-					{
-						if (midY - (gridY * currentState.getBlockSize()) < halfBlock)
-						{
-							if (positionAufSpielfeld(x+1, y-1))
-							{
-								//##0
-								//###
-								//###
-								continuousKillerMap[x+1][y-1] = true;
-								if (positionAufSpielfeld(x + 2, y - 2)) {
-									//###0
-									//####
-									//####
-									//####
-									continuousKillerMap[x + 2][y - 2] = true;
-								}
-							}
-							if (positionAufSpielfeld(x, y-1))
-							{
-								//#0#
-								//###
-								//###
-								continuousKillerMap[x][y-1] = true;
-							}
-						}
-						else
-						{
-							if (positionAufSpielfeld(x+1, y+1))
-							{
-								//###
-								//###
-								//##0
-								continuousKillerMap[x+1][y+1] = true;
-								if (positionAufSpielfeld(x + 2, y + 2)) {
-									//####
-									//####
-									//####
-									//###0
-									continuousKillerMap[x + 2][y + 2] = true;
-								}
-							}
-							if (positionAufSpielfeld(x, y+1))
-							{
-								//###
-								//###
-								//#0#
-								continuousKillerMap[x][y+1] = true;
-							}
-						}
-
-						if (positionAufSpielfeld(x+1, y))
-						{
-							//###
-							//##0
-							//###
-							continuousKillerMap[x+1][y] = true;
-						}
-					}
-				}
-			}
-		}
-	}
+//	public void calculateContinuousKillerMap(YoloState currentState, int x, int y)
+//	{
+//		//reset old values
+//		for (int i = 0; i < MAX_X; i++) {
+//			for (int j = 0; j < MAX_Y; j++) {
+//				//TODO: if you want to paint, you have to disable this
+//				continuousKillerMap[i][j] = false;
+//			}
+//		}
+//
+//		ArrayList<Observation>[][] grid = currentState.getObservationGrid();
+//		if(positionAufSpielfeld(x, y)) {
+//			ArrayList<Observation> observations = grid[x][y];
+//			for (Observation observation : observations) {
+//				int obsIndex = itypeToIndex(observation.itype);
+//				if (isContinuousMovingEnemy(obsIndex))
+//				{
+//					int halfBlock = currentState.getBlockSize()/2;
+//					double midX = observation.position.x + halfBlock;
+//					double midY = observation.position.y + halfBlock;
+//
+//					double midInBlocksX = (int)(midX / currentState.getBlockSize());
+//					double midInBlocksY = (int)(midY / currentState.getBlockSize());
+//
+//					int gridX = (int)midInBlocksX;
+//					int gridY = (int)midInBlocksY;
+//
+//					//###
+//					//#0#
+//					//###
+//					continuousKillerMap[x][y] = true;
+//					if (midX - (gridX * currentState.getBlockSize()) < halfBlock) {
+//						if (midY - (gridY * currentState.getBlockSize()) < halfBlock) {
+//							if (positionAufSpielfeld(x - 1, y - 1)) {
+//								//0##
+//								//###
+//								//###
+//								continuousKillerMap[x - 1][y - 1] = true;
+//								if (positionAufSpielfeld(x - 2, y - 2)) {
+//									//0###
+//									//####
+//									//####
+//									//####
+//									continuousKillerMap[x - 2][y - 2] = true;
+//								}
+//							}
+//							if (positionAufSpielfeld(x, y - 1)) {
+//								//#0#
+//								//###
+//								//###
+//								continuousKillerMap[x][y - 1] = true;
+//							}
+//						} else {
+//							if (positionAufSpielfeld(x - 1, y + 1)) {
+//								//###
+//								//###
+//								//0##
+//								continuousKillerMap[x - 1][y + 1] = true;
+//								if (positionAufSpielfeld(x - 2, y + 2)) {
+//									//####
+//									//####
+//									//####
+//									//0###
+//									continuousKillerMap[x - 2][y + 2] = true;
+//								}
+//							}
+//							if (positionAufSpielfeld(x, y + 1)) {
+//								//###
+//								//###
+//								//#0#
+//								continuousKillerMap[x][y + 1] = true;
+//							}
+//						}
+//
+//						if (positionAufSpielfeld(x - 1, y)) {
+//							//###
+//							//0##
+//							//###
+//							continuousKillerMap[x - 1][y] = true;
+//						}
+//					}
+//					else
+//					{
+//						if (midY - (gridY * currentState.getBlockSize()) < halfBlock)
+//						{
+//							if (positionAufSpielfeld(x+1, y-1))
+//							{
+//								//##0
+//								//###
+//								//###
+//								continuousKillerMap[x+1][y-1] = true;
+//								if (positionAufSpielfeld(x + 2, y - 2)) {
+//									//###0
+//									//####
+//									//####
+//									//####
+//									continuousKillerMap[x + 2][y - 2] = true;
+//								}
+//							}
+//							if (positionAufSpielfeld(x, y-1))
+//							{
+//								//#0#
+//								//###
+//								//###
+//								continuousKillerMap[x][y-1] = true;
+//							}
+//						}
+//						else
+//						{
+//							if (positionAufSpielfeld(x+1, y+1))
+//							{
+//								//###
+//								//###
+//								//##0
+//								continuousKillerMap[x+1][y+1] = true;
+//								if (positionAufSpielfeld(x + 2, y + 2)) {
+//									//####
+//									//####
+//									//####
+//									//###0
+//									continuousKillerMap[x + 2][y + 2] = true;
+//								}
+//							}
+//							if (positionAufSpielfeld(x, y+1))
+//							{
+//								//###
+//								//###
+//								//#0#
+//								continuousKillerMap[x][y+1] = true;
+//							}
+//						}
+//
+//						if (positionAufSpielfeld(x+1, y))
+//						{
+//							//###
+//							//##0
+//							//###
+//							continuousKillerMap[x+1][y] = true;
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
 
 	//Another option to calculate distance to continuous moving enemys, but less effective than
 	//calculateContinuousKillerMap
