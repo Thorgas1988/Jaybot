@@ -94,7 +94,7 @@ public class Agent extends AbstractPlayer {
 		// }
 		currentYoloState = new YoloState(stateObs);
 		YoloKnowledge.instance.learnStochasticEffekts(currentYoloState);
-		YoloKnowledge.instance.learnContinuousMovingEnemies(currentYoloState);
+//		YoloKnowledge.instance.learnContinuousMovingEnemies(currentYoloState);
 
 //		System.out.println(YoloKnowledge.instance.toString());
 
@@ -313,21 +313,21 @@ public class Agent extends AbstractPlayer {
 
 			ArrayList<Observation> observations[] = currentYoloState.getNpcPositions();
 
-			for (int k = 0; k < observations.length; k++) {
-				for (Observation temp : observations[k]) {
-					int obsIndex = YoloKnowledge.instance.itypeToIndex(temp.itype);
-
-					if (YoloKnowledge.instance.isContinuousMovingEnemy(obsIndex)) {
-						double diff = currentYoloState.getAvatar().position.dist(temp.position);
-
-						g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
-						//g.drawString(temp.position.toString(), (int) temp.position.x, (int) temp.position.y+12);
-						g.drawString(diff / half_block + "", (int) temp.position.x, (int) temp.position.y + 12);
-						//g.drawLine((int) temp.position.x + half_block, (int) temp.position.y + half_block, (int) currentYoloState.getAvatar().position.x, (int) currentYoloState.getAvatar().position.y);
-					}
-
-				}
-			}
+//			for (int k = 0; k < observations.length; k++) {
+//				for (Observation temp : observations[k]) {
+//					int obsIndex = YoloKnowledge.instance.itypeToIndex(temp.itype);
+//
+//					if (YoloKnowledge.instance.isContinuousMovingEnemy(obsIndex)) {
+//						double diff = currentYoloState.getAvatar().position.dist(temp.position);
+//
+//						g.drawString(temp.itype+"", (int) temp.position.x, (int) temp.position.y);
+//						//g.drawString(temp.position.toString(), (int) temp.position.x, (int) temp.position.y+12);
+//						g.drawString(diff / half_block + "", (int) temp.position.x, (int) temp.position.y + 12);
+//						//g.drawLine((int) temp.position.x + half_block, (int) temp.position.y + half_block, (int) currentYoloState.getAvatar().position.x, (int) currentYoloState.getAvatar().position.y);
+//					}
+//
+//				}
+//			}
 
 			g.setColor(Color.MAGENTA);
 
