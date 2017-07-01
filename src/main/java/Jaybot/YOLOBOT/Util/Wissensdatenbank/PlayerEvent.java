@@ -62,6 +62,9 @@ public class PlayerEvent implements YoloEventController {
         }
         observationCount++;
 
+        System.out.println("Learned observations: " + observationCount);
+        System.out.println("Blocked observations: " + blockedEventCount);
+
         randomForest.train(playerIType, otherIType, inventoryItems, event);
     }
 
